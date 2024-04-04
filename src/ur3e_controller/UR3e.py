@@ -16,7 +16,6 @@ class UR3e:
     r"""
     A class to control the UR3e robot arm.
     
-    @param: _robot The RobotCommander instance
     """
 
     def __init__(self) -> None:

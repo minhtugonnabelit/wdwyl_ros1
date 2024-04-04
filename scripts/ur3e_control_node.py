@@ -10,7 +10,7 @@ class MissionPlanner:
 
     def __init__(self) -> None:
         
-        rospy.init_node("mission_planner", anonymous=True)
+        rospy.init_node("What_drink_would_you_like?", anonymous=True)
         rospy.loginfo("Initializing MissionPlanner")
         self.rate = rospy.Rate(CONTROL_RATE)
         self._ur3e = UR3e()
@@ -26,8 +26,7 @@ class MissionPlanner:
         rospy.on_shutdown(self.cleanup)
 
     def _img_callback(self, img_msg : Image):
-
-        rospy.loginfo("Received image")
+        
         self._img_msg = img_msg
 
     def system_loop(self):
