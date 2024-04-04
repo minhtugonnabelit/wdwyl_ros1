@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import rospy
+from sensor_msgs.msg import Image
 
 from ur3e_controller.UR3e import UR3e
 from ur3e_controller.utility import *
@@ -8,13 +9,26 @@ from ur3e_controller.utility import *
 class MissionPlanner:
 
     def __init__(self) -> None:
-
+        
+        rospy.init_node("mission_planner", anonymous=True)
         rospy.loginfo("Initializing MissionPlanner")
+        self.rate = rospy.Rate(CONTROL_RATE)
         self._ur3e = UR3e()
+
+        # Initialize data callback channels
+        self._img_msg = None
+        self._img_sub = rospy.Subscriber("camera/image", Image, self._img_callback)
+        
+        # Initial action to be performed
         self._ur3e.home()
         self._ur3e.open_gripper()
 
         rospy.on_shutdown(self.cleanup)
+
+    def _img_callback(self, img_msg : Image):
+
+        rospy.loginfo("Received image")
+        self._img_msg = img_msg
 
     def system_loop(self):
         

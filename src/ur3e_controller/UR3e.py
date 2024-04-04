@@ -19,11 +19,6 @@ class UR3e:
     @param: _robot The RobotCommander instance
     """
 
-    _POS_TOL = 0.01
-    _ORI_TOL = 0.01
-    _MAX_VEL_SCALE_FACTOR = 0.1
-    _MAX_ACC_SCALE_FACTOR = 0.1
-
     def __init__(self) -> None:
 
         moveit_commander.roscpp_initialize(sys.argv)
@@ -45,10 +40,10 @@ class UR3e:
         self._group.set_planner_id("RRTConnectkConfigDefault")
         self._group.set_planning_time(10)
         self._group.set_num_planning_attempts(5)
-        self._group.set_goal_position_tolerance(self._POS_TOL)
-        self._group.set_goal_orientation_tolerance(self._ORI_TOL)
-        self._group.set_max_velocity_scaling_factor(self._MAX_VEL_SCALE_FACTOR)
-        self._group.set_max_acceleration_scaling_factor(self._MAX_ACC_SCALE_FACTOR)
+        self._group.set_goal_position_tolerance(POS_TOL)
+        self._group.set_goal_orientation_tolerance(ORI_TOL)
+        self._group.set_max_velocity_scaling_factor(MAX_VEL_SCALE_FACTOR)
+        self._group.set_max_acceleration_scaling_factor(MAX_ACC_SCALE_FACTOR)
     
     def shutdown(self):
         r"""

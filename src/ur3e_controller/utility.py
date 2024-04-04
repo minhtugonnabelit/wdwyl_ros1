@@ -5,6 +5,16 @@ from moveit_commander.conversions import pose_to_list
 
 from math import pi, tau, dist, fabs, cos
 
+# Constants variables
+CONTROL_RATE = 10
+POS_TOL = 0.01
+ORI_TOL = 0.01
+MAX_VEL_SCALE_FACTOR = 0.1
+MAX_ACC_SCALE_FACTOR = 0.1
+INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]
+CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))
+
+
 def all_close(goal, actual, tolerance):
     """
     Convenience method for testing if the values in two lists are within a tolerance of each other.
