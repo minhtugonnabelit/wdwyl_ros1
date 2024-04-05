@@ -5,6 +5,7 @@ import rospy
 from ur3e_controller.UR3e import UR3e
 from ur3e_controller.utility import *
 
+
 class MissionPlanner:
 
     def __init__(self) -> None:

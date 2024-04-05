@@ -2,6 +2,7 @@
 
 from geometry_msgs.msg import Pose, PoseStamped
 from moveit_commander.conversions import pose_to_list
+from moveit_commander import PlanningSceneInterface
 
 from math import pi, tau, dist, fabs, cos
 
@@ -33,3 +34,21 @@ def all_close(goal, actual, tolerance):
         return d <= tolerance and cos_phi_half >= cos(tolerance / 2.0)
 
     return True
+
+def create_collision_object_box(scene : PlanningSceneInterface, name, pose, size, frame_id="base_link"):
+
+
+    box_pose = PoseStamped()
+    box_pose.header.frame_id = frame_id
+    box_pose.pose = pose
+    box_name = name
+    
+    scene.add_box(box_name, box_pose, size)
+
+def create_collision_object(scene : PlanningSceneInterface, name, pose, size, frame_id="base_link"):
+
+    create_collision_object_box(scene, name, pose, size, frame_id)
+
+    scene.add_mesh(name, pose, "package://wdwyl_ros1/meshes/box.stl")
+
+    pass

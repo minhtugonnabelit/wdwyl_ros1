@@ -97,11 +97,20 @@ class UR3e:
         r"""
         Smooth the path using the path constraints.
         @param: plan A RobotTrajectory instance
-        @returns: RobotTrajectory instance
+        @returns: RobotTrajectory instance for smoothed path with addtional interpolation points
         """
         (interp_traj, fraction) = self._group.compute_cartesian_path(cart_traj, resolution, jump_thresh, )
         return interp_traj, fraction
     
+    # Collision object handling 
+
+    def add_collision_object(self, obj):
+
+        box_pose = geometry_msgs.msg.PoseStamped()
+        box_pose.header.frame_id = "panda_hand"
+        box_pose.pose.orientation.w = 1.0
+        box_pose.pose.position.z = 0.11  # above the panda_hand frame
+        box_name = "box"        
 
     # Delicted actions
 

@@ -1,0 +1,7 @@
+set(wdwyl_ros1_SETUP_PY_SETUP_MODULE "setuptools")
+set(wdwyl_ros1_SETUP_PY_VERSION "0.0.0")
+set(wdwyl_ros1_SETUP_PY_SCRIPTS "")
+set(wdwyl_ros1_SETUP_PY_PACKAGES "ur3e_controller")
+set(wdwyl_ros1_SETUP_PY_PACKAGE_DIRS "src/ur3e_controller")
+set(wdwyl_ros1_SETUP_PY_MODULES "")
+set(wdwyl_ros1_SETUP_PY_MODULE_DIRS "")
