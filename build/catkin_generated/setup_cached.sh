@@ -9,6 +9,7 @@
 # modified environment variables
 export CMAKE_PREFIX_PATH="/home/benjamin/git/wdwyl_ros1/build/devel:$CMAKE_PREFIX_PATH"
 export LD_LIBRARY_PATH="/home/benjamin/git/wdwyl_ros1/build/devel/lib:$LD_LIBRARY_PATH"
+export PKG_CONFIG_PATH="/home/benjamin/git/wdwyl_ros1/build/devel/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PWD='/home/benjamin/git/wdwyl_ros1/build'
 export PYTHONPATH="/home/benjamin/git/wdwyl_ros1/build/devel/lib/python3/dist-packages:$PYTHONPATH"
 export ROSLISP_PACKAGE_DIRECTORIES="/home/benjamin/git/wdwyl_ros1/build/devel/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
