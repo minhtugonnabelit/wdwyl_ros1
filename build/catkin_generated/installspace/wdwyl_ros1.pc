@@ -1,8 +1,0 @@
-prefix=/usr/local
-
-Name: wdwyl_ros1
-Description: Description of wdwyl_ros1
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
