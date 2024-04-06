@@ -18,11 +18,10 @@ class MissionPlanner:
 
         # Initialize data callback channels
         self._img_msg = None
-        self._img_sub = rospy.Subscriber("camera/image", Image, self._img_callback)
+        # self._img_sub = rospy.Subscriber("camera/image", Image, self._img_callback)
         
         # Initial action to be performed
         self._ur3e.home()
-        self._ur3e.open_gripper()
 
         rospy.on_shutdown(self.cleanup)
 
@@ -39,6 +38,12 @@ class MissionPlanner:
 
     def cleanup(self):
         rospy.loginfo("Cleaning up")
-        self._ur3e.close_gripper()
+        # self._ur3e.close_gripper()
         self._ur3e.home()
+        self._ur3e.shutdown()
         rospy.loginfo("Mission complete")
+
+
+if __name__ == "__main__":
+    mp = MissionPlanner()
+    mp.system_loop()
