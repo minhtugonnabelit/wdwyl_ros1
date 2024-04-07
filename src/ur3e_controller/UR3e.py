@@ -58,6 +58,7 @@ class UR3e:
         
         return True
 
+
     def shutdown(self):
         r"""
         Shutdown the moveit_commander.
@@ -85,6 +86,7 @@ class UR3e:
 
         cur_joint = self._group.get_current_joint_values()
         return all_close(joint_goal, cur_joint, 0.01)
+    
 
     def go_to_pose_goal(self, pose_goal):
         r"""
@@ -104,6 +106,7 @@ class UR3e:
 
         cur_pose = self._group.get_current_pose().pose
         return all_close(pose_goal, cur_pose, 0.01)
+    
 
     def smoothing_path(self, cart_traj: list, resolution=0.01, jump_thresh=0.0):
         r"""
@@ -115,6 +118,7 @@ class UR3e:
             cart_traj, resolution, jump_thresh,)
         return interp_traj, fraction
 
+
     def execute_plan(self, plan):
         r"""
         Execute the plan.
@@ -125,10 +129,15 @@ class UR3e:
         self._group.stop()
         return True
 
+
     # Delicted actions
 
     def home(self):
+        r"""
+        Move the robot to the home position.
+        """
         self.go_to_goal_joint([0, -pi/2, pi/2, 0, pi/2, 0])
+
 
     # Gripper control
 
