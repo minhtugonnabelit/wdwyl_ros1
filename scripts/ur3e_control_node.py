@@ -22,6 +22,7 @@ class MissionPlanner:
         
         # Initial action to be performed
         self._ur3e.home()
+        self._ur3e.open_gripper(force=0)
 
         rospy.on_shutdown(self.cleanup)
 

@@ -10,10 +10,12 @@ from math import pi, tau, dist, fabs, cos
 CONTROL_RATE = 10
 POS_TOL = 0.01
 ORI_TOL = 0.01
-MAX_VEL_SCALE_FACTOR = 0.1
-MAX_ACC_SCALE_FACTOR = 0.1
+MAX_VEL_SCALE_FACTOR = 0.05
+MAX_ACC_SCALE_FACTOR = 0.05
 INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]
 CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))
+GRIPPER_OPEN = 1100
+GRIPPER_CLOSE = 400
 
 
 def all_close(goal, actual, tolerance):

@@ -136,7 +136,7 @@ class UR3e:
         r"""
         Move the robot to the home position.
         """
-        self.go_to_goal_joint([0, -pi/2, pi/2, 0, pi/2, 0])
+        self.go_to_goal_joint([pi/2, -pi/2, pi/2, 0, pi/2, 0])
 
 
     # Gripper control

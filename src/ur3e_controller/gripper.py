@@ -3,6 +3,8 @@
 import rospy
 from onrobot_rg_control.msg import OnRobotRGOutput
 
+from ur3e_controller.utility import *
+
 class Gripper:
 
     def __init__(self) -> None:
@@ -14,7 +16,7 @@ class Gripper:
         rospy.loginfo("Opening gripper")
         command = OnRobotRGOutput()
         command.rGFR = force
-        command.rGWD = 1100
+        command.rGWD = GRIPPER_OPEN
         command.rCTR = 16
         self._cmd_pub.publish(command)
 
@@ -24,7 +26,7 @@ class Gripper:
         rospy.loginfo("Closing gripper")
         command = OnRobotRGOutput()
         command.rGFR = force
-        command.rGWD = 0
+        command.rGWD = GRIPPER_CLOSE
         command.rCTR = 16
         self._cmd_pub.publish(command)
 
