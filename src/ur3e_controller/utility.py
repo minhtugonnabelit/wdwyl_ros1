@@ -2,7 +2,7 @@
 
 from geometry_msgs.msg import Pose, PoseStamped
 from moveit_commander.conversions import pose_to_list
-from moveit_commander import PlanningSceneInterface
+from moveit_commander import PlannerInterfaceDescription, MoveGroupCommander, PlanningSceneInterface
 
 from math import pi, tau, dist, fabs, cos
 
@@ -10,10 +10,12 @@ from math import pi, tau, dist, fabs, cos
 CONTROL_RATE = 10
 POS_TOL = 0.01
 ORI_TOL = 0.01
-MAX_VEL_SCALE_FACTOR = 0.1
-MAX_ACC_SCALE_FACTOR = 0.1
+MAX_VEL_SCALE_FACTOR = 0.05
+MAX_ACC_SCALE_FACTOR = 0.05
 INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]
 CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))
+GRIPPER_OPEN = 1100
+GRIPPER_CLOSE = 400
 
 
 def all_close(goal, actual, tolerance):
@@ -45,20 +47,3 @@ def all_close(goal, actual, tolerance):
 
     return True
 
-def create_collision_object_box(scene : PlanningSceneInterface, name, pose, size, frame_id="base_link"):
-
-
-    box_pose = PoseStamped()
-    box_pose.header.frame_id = frame_id
-    box_pose.pose = pose
-    box_name = name
-    
-    scene.add_box(box_name, box_pose, size)
-
-def create_collision_object(scene : PlanningSceneInterface, name, pose, size, frame_id="base_link"):
-
-    create_collision_object_box(scene, name, pose, size, frame_id)
-
-    scene.add_mesh(name, pose, "package://wdwyl_ros1/meshes/box.stl")
-
-    pass
