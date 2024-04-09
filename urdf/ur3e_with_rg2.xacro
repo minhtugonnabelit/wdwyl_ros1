@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot name="ur3e_with_rg2" xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:include filename="$(find ur_description)/urdf/inc/ur3e_macro.xacro"/>
+  <xacro:ur3e_robot prefix=""/>
+
+  <xacro:include filename="$(find wdwyl_ros1)/urdf/onrobot_rg2_model_macro.xacro" />
+  <xacro:onrobot_rg2 prefix="" connected_to="tool0"/>
+
+</robot>
