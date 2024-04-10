@@ -37,6 +37,18 @@ class RealSense:
         self.depth_intrinsics.model = rs.distortion.none  # Assuming no lens distortion
         self.depth_intrinsics.coeffs = [0, 0, 0, 0, 0]  # Assuming no distortion coefficients
 
+        self.get_crate = False
+        self.get_bottle = False
+
+        self.crate_pos = None
+        self.bottle_pos = None
+
+    def get_crate_pos(self):
+        return self.crate_pos
+    
+    def get_bottle_pos(self):
+        return self.bottle_pos
+
     # Projecting a 2D point to a 3D image plane:
     def project_2D_to_3D(self, u, v, depth):
 
@@ -66,37 +78,48 @@ class RealSense:
     def rgb_callback(self, data):
         # Convert the ROS Image message to a cv2 image
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        # self.img_processing()
         
-        # # Run YOLO model on the frame
-        results = self.model(self.rgb_image)[0]
 
-        # Annotate the image
-        for result in results.boxes.data.tolist():
-            x1, y1, x2, y2, score, class_id = result
-            if score > self.threshold:
-                cv2.rectangle(self.rgb_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 4)
-                cv2.putText(self.rgb_image, results.names[int(class_id)].upper(), (int(x1), int(y1 - 10)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
+        if (self.get_crate == True and self.get_bottle == False):
+            self.img_processing()
+        
+        elif (self.get_crate == False and self.get_bottle == True):
+            # # Run YOLO model on the frame
+            results = self.model(self.rgb_image)[0]
+
+            # Annotate the image
+            for result in results.boxes.data.tolist():
+                x1, y1, x2, y2, score, class_id = result
+                if score > self.threshold:
+                    cv2.rectangle(self.rgb_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 4)
+                    cv2.putText(self.rgb_image, results.names[int(class_id)].upper(), (int(x1), int(y1 - 10)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
+                    
+                    # ///////////////////////////////////////////////
+                    # Calculate the center of the bounding box
+                    center_x_bottle = int((x1 + x2) / 2)
+                    center_y_bottle = int((y1 + y2) / 2)
+                    cv2.circle(self.rgb_image, (center_x_bottle, center_y_bottle), 5, (0, 255, 0), -1)  # Change the color and size as needed
+                    # Make sure the depth image is already available and synced with the current RGB frame
+                    if self.depth_image is not None:
+                        # Ensure center_x and center_y are within the bounds of the depth image
+                        if 0 <= center_x_bottle < self.depth_image.shape[1] and 0 <= center_y_bottle < self.depth_image.shape[0]:
+                            depth = self.depth_image[center_y_bottle, center_x_bottle].astype(float)
+                            depth_meters = depth * self.depth_scale  # Convert depth to meters
+                            
+                            # Assuming self.depth_intrinsics is set correctly
+                            # real_world_coords = rs.rs2_deproject_pixel_to_point(self.depth_intrinsics, [center_x_bottle, center_y_bottle], depth_meters)
+                            # real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, depth_meters)
+                            bottle_depth = self.closest_depth - 0.02
+                            real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, self.closest_depth)
+                            print(f"Object real-world coordinates: x={real_world_coords[0]}, y={real_world_coords[1]}, z={real_world_coords[2]}")
+                            print(self.closest_depth)
+                            self.bottle_pos = real_world_coords
+                    # /////////////////////////////////////////////
                 
-                # ///////////////////////////////////////////////
-                # Calculate the center of the bounding box
-                center_x_bottle = int((x1 + x2) / 2)
-                center_y_bottle = int((y1 + y2) / 2)
-                cv2.circle(self.rgb_image, (center_x_bottle, center_y_bottle), 5, (0, 255, 0), -1)  # Change the color and size as needed
-                # Make sure the depth image is already available and synced with the current RGB frame
-                if self.depth_image is not None:
-                    # Ensure center_x and center_y are within the bounds of the depth image
-                    if 0 <= center_x_bottle < self.depth_image.shape[1] and 0 <= center_y_bottle < self.depth_image.shape[0]:
-                        depth = self.depth_image[center_y_bottle, center_x_bottle].astype(float)
-                        depth_meters = depth * self.depth_scale  # Convert depth to meters
-                        
-                        # Assuming self.depth_intrinsics is set correctly
-                        # real_world_coords = rs.rs2_deproject_pixel_to_point(self.depth_intrinsics, [center_x_bottle, center_y_bottle], depth_meters)
-                        real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, depth_meters)
-                        print(f"Object real-world coordinates: x={real_world_coords[0]}, y={real_world_coords[1]}, z={real_world_coords[2]}")
-                        print(self.closest_depth * self.depth_scale)
-                # /////////////////////////////////////////////
+        
+        else:
+            pass
 
         # Display the image
         cv2.imshow('YOLO Detection', self.rgb_image)
@@ -111,7 +134,7 @@ class RealSense:
         masked_image = np.ma.masked_equal(self.depth_image, 0.0)
 
         # Find the closest depth (minimum value) excluding zeros
-        self.closest_depth = masked_image.min()
+        self.closest_depth = masked_image.min() * self.depth_scale
 
     def img_processing(self):
         
@@ -178,9 +201,11 @@ class RealSense:
                     
                     # Assuming self.depth_intrinsics is set correctly
                     # real_world_coords = rs.rs2_deproject_pixel_to_point(self.depth_intrinsics, [center_x_bottle, center_y_bottle], depth_meters)
-                    real_world_coords = self.project_2D_to_3D(cx_crate, cy_crate, depth_meters)
+                    # real_world_coords = self.project_2D_to_3D(cx_crate, cy_crate, depth_meters)
+                    real_world_coords = self.project_2D_to_3D(cx_crate, cy_crate, self.closest_depth)
                     print(f"Object real-world coordinates: x={real_world_coords[0]}, y={real_world_coords[1]}, z={real_world_coords[2]}")
-                    print(self.closest_depth * self.depth_scale)
+                    print(self.closest_depth)
+                    self.crate_pos = real_world_coords
             # /////////////////////////////////////////////
 
             # Draw a rectangle connecting those four points
