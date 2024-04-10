@@ -6,6 +6,8 @@ from sensor_msgs.msg import Image
 from ur3e_controller.UR3e import UR3e
 from ur3e_controller.utility import *
 
+# @TODO: Implementing loading scene with object detected
+# @TODO: initializing a static tf from camera to toolpose via static broadcaster
 
 class MissionPlanner:
 
@@ -17,8 +19,13 @@ class MissionPlanner:
         self._ur3e = UR3e()
 
         # Initialize data callback channels
-        # self._img_msg = None
-        # self._img_sub = rospy.Subscriber("camera/image", Image, self._img_callback)
+        try:
+            rospy.wait_for_message("camera/image_raw", Image, timeout=1)
+        finally:
+            pass 
+
+        self._img_msg = None
+        self._img_sub = rospy.Subscriber("camera/image", Image, self._img_callback)
         
         # Initial action to be performed
         self._ur3e.home()
@@ -40,9 +47,10 @@ class MissionPlanner:
     def cleanup(self):
         
         rospy.loginfo("Cleaning up")
-        # self._ur3e.close_gripper()
+
         self._ur3e.home()
         self._ur3e.shutdown()
+        
         rospy.loginfo("Mission complete")
 
 

@@ -7,15 +7,15 @@ from moveit_commander import PlannerInterfaceDescription, MoveGroupCommander, Pl
 from math import pi, tau, dist, fabs, cos
 
 # Constants variables
-CONTROL_RATE = 10
-POS_TOL = 0.01
-ORI_TOL = 0.01
+CONTROL_RATE = 10 #Hz
+POS_TOL = 0.01  #m
+ORI_TOL = 0.01  #m
 MAX_VEL_SCALE_FACTOR = 0.05
 MAX_ACC_SCALE_FACTOR = 0.05
-INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]
-CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))
-GRIPPER_OPEN = 1100
-GRIPPER_CLOSE = 400
+INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  #rad
+CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
+GRIPPER_OPEN = 1100     #0.1mm
+GRIPPER_CLOSE = 400     #0.1mm
 
 
 def all_close(goal, actual, tolerance):
