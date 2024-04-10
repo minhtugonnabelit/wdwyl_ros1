@@ -1,7 +1,67 @@
 <?xml version="1.0"?>
-<robot name="ur3e_with_rg2" xmlns:xacro="http://wiki.ros.org/xacro">
+<robot name="ur3e_with_rg2"
+  xmlns:xacro="http://wiki.ros.org/xacro">
 
-  <div id="TODO"></div>
+
+  <material name="LightGrey">
+    <color rgba="0.7 0.7 0.7 1"/>
+  </material>
+
+  <material name="DarkGrey">
+    <color rgba="0.3 0.3 0.3 1"/>
+  </material>
+
+  <link name="world"/>
+
+  <link name="trolley">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.7 0.7 1"/>
+      </geometry>
+      <material name="LightGrey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.7 0.7 1"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="task_plate">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.495 0.32 0.02"/>
+      </geometry>
+      <material name="DarkGrey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.5 0.32 0.02"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="task_plate_joint" type="fixed">
+    <parent link="trolley"/>
+    <child link="task_plate"/>
+    <origin xyz="0 -0.1 0.5" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="trolley_joint" type="fixed">
+    <parent link="world"/>
+    <child link="trolley"/>
+    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="fixed_base_joint" type="fixed">
+    <parent link="trolley"/>
+    <child link="base_link"/>
+    <origin xyz="0 0.21 0.5" rpy="0 0 -3.14"/>
+  </joint>
 
   <xacro:include filename="$(find ur_description)/urdf/inc/ur3e_macro.xacro"/>
   <xacro:ur3e_robot prefix=""/>
