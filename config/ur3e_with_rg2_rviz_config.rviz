@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
     Tree Height: 746
   - Class: rviz/Selection
@@ -74,6 +76,15 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        camera_bottom_screw_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        camera_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         flange:
           Alpha: 1
           Show Axes: false
@@ -123,6 +134,11 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        task_plate:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         tool0:
           Alpha: 1
           Show Axes: false
@@ -162,6 +178,98 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
+    - Class: rviz/TF
+      Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+        base:
+          Value: false
+        base_link:
+          Value: false
+        base_link_inertia:
+          Value: false
+        camera_bottom_screw_frame:
+          Value: true
+        camera_link:
+          Value: false
+        flange:
+          Value: false
+        forearm_link:
+          Value: false
+        left_inner_finger:
+          Value: false
+        left_inner_knuckle:
+          Value: false
+        left_outer_knuckle:
+          Value: false
+        onrobot_rg2_base_link:
+          Value: false
+        right_inner_finger:
+          Value: false
+        right_inner_knuckle:
+          Value: false
+        right_outer_knuckle:
+          Value: false
+        shoulder_link:
+          Value: false
+        task_plate:
+          Value: false
+        tool0:
+          Value: true
+        trolley:
+          Value: false
+        upper_arm_link:
+          Value: false
+        world:
+          Value: false
+        wrist_1_link:
+          Value: false
+        wrist_2_link:
+          Value: false
+        wrist_3_link:
+          Value: false
+      Marker Alpha: 1
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        world:
+          trolley:
+            base_link:
+              base:
+                {}
+              base_link_inertia:
+                shoulder_link:
+                  upper_arm_link:
+                    forearm_link:
+                      wrist_1_link:
+                        wrist_2_link:
+                          wrist_3_link:
+                            flange:
+                              tool0:
+                                camera_bottom_screw_frame:
+                                  camera_link:
+                                    {}
+                                onrobot_rg2_base_link:
+                                  left_inner_knuckle:
+                                    {}
+                                  left_outer_knuckle:
+                                    left_inner_finger:
+                                      {}
+                                  right_inner_knuckle:
+                                    {}
+                                  right_outer_knuckle:
+                                    right_inner_finger:
+                                      {}
+            task_plate:
+              {}
+      Update Interval: 0
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -190,7 +298,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.996953964233398
+      Distance: 1.6701574325561523
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -206,9 +314,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2853982448577881
+      Pitch: 1.0703976154327393
       Target Frame: <Fixed Frame>
-      Yaw: 5.4485764503479
+      Yaw: 3.338543653488159
     Saved: ~
 Window Geometry:
   Displays:

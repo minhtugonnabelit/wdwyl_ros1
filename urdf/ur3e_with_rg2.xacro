@@ -17,14 +17,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.7 0.7 1"/>
+        <box size="0.7 0.7 0.9"/>
       </geometry>
       <material name="LightGrey"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.7 0.7 1"/>
+        <box size="0.7 0.7 0.9"/>
       </geometry>
     </collision>
   </link>
@@ -48,19 +48,19 @@
   <joint name="task_plate_joint" type="fixed">
     <parent link="trolley"/>
     <child link="task_plate"/>
-    <origin xyz="0 -0.1 0.5" rpy="0 0 0"/>
+    <origin xyz="0 -0.1 0.45" rpy="0 0 0"/>
   </joint>
 
   <joint name="trolley_joint" type="fixed">
     <parent link="world"/>
     <child link="trolley"/>
-    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+    <origin xyz="0 0 0.45" rpy="0 0 0"/>
   </joint>
 
   <joint name="fixed_base_joint" type="fixed">
     <parent link="trolley"/>
     <child link="base_link"/>
-    <origin xyz="0 0.21 0.5" rpy="0 0 -3.14"/>
+    <origin xyz="0 0.21 0.45" rpy="0 0 -3.14"/>
   </joint>
 
   <xacro:include filename="$(find ur_description)/urdf/inc/ur3e_macro.xacro"/>
@@ -68,5 +68,10 @@
 
   <xacro:include filename="$(find wdwyl_ros1)/urdf/onrobot_rg2_model_macro.xacro" />
   <xacro:onrobot_rg2 prefix="" connected_to="tool0"/>
+
+  <!-- <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro"/>
+  <xacro:sensor_d435i parent="tool0" name="camera" >
+    <origin xyz="-0.0329 0 0.0732" rpy="0 -1.57 0"/>
+  </xacro:sensor_d435i> -->
 
 </robot>
