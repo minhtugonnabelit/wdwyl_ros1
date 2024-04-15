@@ -18,14 +18,14 @@ class MissionPlanner:
         self.rate = rospy.Rate(CONTROL_RATE)
         self._ur3e = UR3e()
 
-        # Initialize data callback channels
-        try:
-            rospy.wait_for_message("camera/image_raw", Image, timeout=1)
-        finally:
-            pass 
+        # # Initialize data callback channels
+        # try:
+        #     rospy.wait_for_message("camera/image_raw", Image, timeout=1)
+        #     self._img_msg = None
+        #     self._img_sub = rospy.Subscriber("camera/image", Image, self._img_callback)
+        # finally:
+        #     pass 
 
-        self._img_msg = None
-        self._img_sub = rospy.Subscriber("camera/image", Image, self._img_callback)
         
         # Initial action to be performed
         self._ur3e.home()
