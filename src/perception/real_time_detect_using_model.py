@@ -66,13 +66,13 @@ class RealSense:
         y = (v - cy) * depth / fy
         
         #for UR3
-        x = x + tx
-        y = y + ty
-        depth = depth - tz
+        # x = x + tx
+        # y = y + ty
+        # depth = depth - tz
 
         P_camera = np.array([x, y, depth, 1])  # 3D point in the camera frame
 
-
+        
         return P_camera
 
     def rgb_callback(self, data):
@@ -105,15 +105,15 @@ class RealSense:
                         # Ensure center_x and center_y are within the bounds of the depth image
                         if 0 <= center_x_bottle < self.depth_image.shape[1] and 0 <= center_y_bottle < self.depth_image.shape[0]:
                             depth = self.depth_image[center_y_bottle, center_x_bottle].astype(float)
-                            depth_meters = depth * self.depth_scale  # Convert depth to met ers
+                            depth_meters = depth * self.depth_scale  # Convert depth to meters
                             
                             # Assuming self.depth_intrinsics is set correctly
                             # real_world_coords = rs.rs2_deproject_pixel_to_point(self.depth_intrinsics, [center_x_bottle, center_y_bottle], depth_meters)
                             # real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, depth_meters)
-                            bottle_depth = self.closest_depth - 0.02
+                            bottle_depth = self.closest_depth + 0.02
                             real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, bottle_depth)
                             print(f"Object real-world coordinates: x={real_world_coords[0]}, y={real_world_coords[1]}, z={real_world_coords[2]}")
-                            print(self.closest_depth)
+                            print(bottle_depth)
                             self.bottle_pos = real_world_coords
                     # /////////////////////////////////////////////
                 
@@ -235,6 +235,8 @@ if __name__ == '__main__':
     
     # Create the RealSense object
     rs = RealSense()
+
+    rs.get_bottle = True
 
     # Spin to keep the script for exiting
     rospy.spin()
