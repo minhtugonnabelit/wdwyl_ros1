@@ -13,6 +13,7 @@ ORI_TOL = 0.01  #m
 MAX_VEL_SCALE_FACTOR = 0.05
 MAX_ACC_SCALE_FACTOR = 0.05
 INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  #rad
+LOCALIZE_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
 CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
 GRIPPER_OPEN = 1100     #0.1mm
 GRIPPER_CLOSE = 400     #0.1mm

@@ -76,11 +76,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        camera_bottom_screw_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        camera_link:
+        end_point_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -153,10 +149,6 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        world:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
         wrist_1_link:
           Alpha: 1
           Show Axes: false
@@ -191,9 +183,7 @@ Visualization Manager:
           Value: false
         base_link_inertia:
           Value: false
-        camera_bottom_screw_frame:
-          Value: true
-        camera_link:
+        end_point_link:
           Value: false
         flange:
           Value: false
@@ -218,12 +208,10 @@ Visualization Manager:
         task_plate:
           Value: false
         tool0:
-          Value: true
+          Value: false
         trolley:
           Value: false
         upper_arm_link:
-          Value: false
-        world:
           Value: false
         wrist_1_link:
           Value: false
@@ -238,43 +226,41 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        world:
-          trolley:
-            base_link:
-              base:
-                {}
-              base_link_inertia:
-                shoulder_link:
-                  upper_arm_link:
-                    forearm_link:
-                      wrist_1_link:
-                        wrist_2_link:
-                          wrist_3_link:
-                            flange:
-                              tool0:
-                                camera_bottom_screw_frame:
-                                  camera_link:
-                                    {}
-                                onrobot_rg2_base_link:
-                                  left_inner_knuckle:
-                                    {}
-                                  left_outer_knuckle:
-                                    left_inner_finger:
-                                      {}
-                                  right_inner_knuckle:
-                                    {}
-                                  right_outer_knuckle:
-                                    right_inner_finger:
-                                      {}
-            task_plate:
+        trolley:
+          base_link:
+            base:
               {}
+            base_link_inertia:
+              shoulder_link:
+                upper_arm_link:
+                  forearm_link:
+                    wrist_1_link:
+                      wrist_2_link:
+                        wrist_3_link:
+                          flange:
+                            tool0:
+                              end_point_link:
+                                {}
+                              onrobot_rg2_base_link:
+                                left_inner_knuckle:
+                                  {}
+                                left_outer_knuckle:
+                                  left_inner_finger:
+                                    {}
+                                right_inner_knuckle:
+                                  {}
+                                right_outer_knuckle:
+                                  right_inner_finger:
+                                    {}
+          task_plate:
+            {}
       Update Interval: 0
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: world
+    Fixed Frame: trolley
     Frame Rate: 30
   Name: root
   Tools:
@@ -298,7 +284,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.6701574325561523
+      Distance: 2.590181350708008
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -306,17 +292,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 0.2092059850692749
+        Y: 0.3208357095718384
+        Z: 0.23391473293304443
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0703976154327393
+      Pitch: 0.6653980016708374
       Target Frame: <Fixed Frame>
-      Yaw: 3.338543653488159
+      Yaw: 3.9335482120513916
     Saved: ~
 Window Geometry:
   Displays:

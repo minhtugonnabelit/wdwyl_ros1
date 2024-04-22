@@ -26,14 +26,15 @@ class UR3e:
         moveit_commander.roscpp_initialize(sys.argv)
         self._robot = RobotCommander()
         self._scene = PlanningSceneInterface()
-        self._group = MoveGroupCommander("manipulator")
+        self._group = MoveGroupCommander("ur3e_arm")
         self._gripper = Gripper()
         self._object_manager = CollisionManager(self._scene)
 
         self._planning_frame = self._group.get_planning_frame()
-        self._eef_link = self._group.get_end_effector_link()
         self._group_names = self._robot.get_group_names()
+        self._eef_link = self._group.get_end_effector_link()
         self._cur_js = self._group.get_current_joint_values()
+
 
         setup_completed = self.movegroup_setup()
 
@@ -163,3 +164,6 @@ class UR3e:
 
     def get_joint_names(self):
         return self._group.get_joints()
+    
+    def get_end_effector_link(self):
+        return self._group.get_end_effector_link()
