@@ -64,16 +64,8 @@
     </inertia>
   </link>
 
-  <!-- virtual End point link for planning to construct endeffector endpoint-->
-  <link name="end_point_link">
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <sphere radius="0.005"/>
-      </geometry>
-      <material name="Mandarin"/>
-    </visual>
-  </link>
+  <!-- virtual End point link for planning to construct endeffector endpoint, thus, no visual or collision aspect -->
+  <link name="end_point_link"/>
 
   <joint name="task_plate_joint" type="fixed">
     <parent link="trolley"/>
@@ -90,7 +82,7 @@
   <joint name="end_point_joint" type="fixed">
     <parent link="tool0"/>
     <child link="end_point_link"/>
-    <origin xyz="0 0 0.189" rpy="0 0 0"/>
+    <origin xyz="0 0 0.20" rpy="0 0 0"/>
   </joint>
 
 
