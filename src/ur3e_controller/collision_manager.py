@@ -16,6 +16,7 @@ class CollisionManager:
         self._object_counter = {
             'bottle': 0,
             'crate': 0,
+            'cube': 0,
         }
 
     def add_collision_object(self, pose : Pose, object_type : str, frame_id : str) -> tuple:
@@ -39,7 +40,40 @@ class CollisionManager:
         mesh_path = f"package://ur3e_controller/meshes/{object_type}.stl"
         self._scene.add_mesh(obj_id, obj_pose, filename=mesh_path)
 
-        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True)
+        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True), obj_id
+    
+    def add_box_collision_object(self, pose : Pose, object_type : str, frame_id : str, size : tuple) -> tuple:
+        r"""
+        Add a box collision object to the scene.
+        @param: pose        The pose of the object
+        @param: object_type The type of the object
+        @param: frame_id    The frame id of the object
+        @param: size        The size of the box
+        @returns: tuple
+        """
+
+        if object_type not in self._object_counter:
+            raise ValueError(f"Invalid object name: {object_type}")
+        
+        self._object_counter[object_type] += 1
+        obj_id = f"{object_type}_{self._object_counter[object_type]:02d}"
+        obj_pose = PoseStamped()
+        obj_pose.header.frame_id = frame_id
+        obj_pose.pose = pose
+
+        self._scene.add_box(obj_id, obj_pose, size=size)
+
+        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True), obj_id
+    
+    def remove_collision_object(self, obj_id : str) -> tuple:
+        r"""
+        Remove a collision object from the scene.
+        @param: obj_id The name of the object
+        @returns: tuple
+        """
+
+        self._scene.remove_world_object(obj_id)
+        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=False, obj_is_attached=False)
 
     def wait_for_obj_state(self, obj_name : str, obj_is_known : bool, obj_is_attached : bool, timeout : float = 4) -> bool:
         r"""

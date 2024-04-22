@@ -26,7 +26,7 @@ class UR3e:
         moveit_commander.roscpp_initialize(sys.argv)
         self._robot = RobotCommander()
         self._scene = PlanningSceneInterface()
-        self._group = MoveGroupCommander("ur3e_arm")
+        self._group = MoveGroupCommander("ur3e")
         self._gripper = Gripper()
         self._object_manager = CollisionManager(self._scene)
 
@@ -106,7 +106,7 @@ class UR3e:
         self._group.clear_pose_targets()
 
         cur_pose = self._group.get_current_pose().pose
-        return all_close(pose_goal, cur_pose, 0.01)
+        return all_close(pose_goal.pose, cur_pose, 0.01)
     
 
     def smoothing_path(self, cart_traj: list, resolution=0.01, jump_thresh=0.0):
@@ -129,6 +129,25 @@ class UR3e:
         self._group.execute(plan, wait=True)
         self._group.stop()
         return True
+    
+
+    # Wrapper for CollisionManager
+
+    def add_collision_object(self, pose, object_type, frame_id):
+        return self._object_manager.add_collision_object(pose, object_type, frame_id)
+    
+    def add_box_collision_object(self, pose, object_type, frame_id, size):
+        return self._object_manager.add_box_collision_object(pose, object_type, frame_id, size)
+    
+    def remove_collision_object(self, object_id):
+        return self._object_manager.remove_collision_object(object_id)
+    
+    def attach_collision_object(self, object_id, link_name):
+        return self._object_manager.attach_object(object_id, link_name, touch_links=[])
+    
+    def detach_collision_object(self, object_id, link_name):
+        return self._object_manager.detach_object(object_id, link_name, touch_links=[])
+    
 
 
     # Delicted actions
@@ -137,7 +156,13 @@ class UR3e:
         r"""
         Move the robot to the home position.
         """
-        self.go_to_goal_joint([pi/2, -pi/2, pi/2, 0, pi/2, 0])
+
+        self._group.set_named_target("home")
+        self._group.go(wait=True)
+        joint_goal = self._group.get_named_target_values("home")
+
+        cur_joint = self._group.get_current_joint_values()
+        return all_close(joint_goal, cur_joint, 0.01)
 
 
     # Gripper control

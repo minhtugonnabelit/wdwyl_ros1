@@ -36,7 +36,7 @@ class Gripper:
         rospy.loginfo(f"Opening gripper to {width}")
         command = OnRobotRGOutput()
         command.rGFR = force
-        command.rGTO = width
+        command.rGWD = width
         command.rCTR = 16
         self._cmd_pub.publish(command)
 
