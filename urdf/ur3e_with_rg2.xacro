@@ -80,9 +80,4 @@
     <origin xyz="0 0 0.20" rpy="0 0 0"/>
   </joint>
 
-
-
-
-
-
 </robot>

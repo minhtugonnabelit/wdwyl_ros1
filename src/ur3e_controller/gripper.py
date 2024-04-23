@@ -21,7 +21,6 @@ class Gripper:
         self._cmd_pub.publish(command)
 
 
-
     def close(self, force=None):
         rospy.loginfo("Closing gripper")
         command = OnRobotRGOutput()
@@ -29,7 +28,6 @@ class Gripper:
         command.rGWD = GRIPPER_CLOSE
         command.rCTR = 16
         self._cmd_pub.publish(command)
-
 
 
     def open_to(self, width, force=None):
@@ -40,3 +38,10 @@ class Gripper:
         command.rCTR = 16
         self._cmd_pub.publish(command)
 
+    def move_to(self, width, force=None):
+        rospy.loginfo(f"Moving gripper to {width}")
+        command = OnRobotRGOutput()
+        command.rGFR = force
+        command.rGWD = width
+        command.rCTR = 16
+        self._cmd_pub.publish(command)

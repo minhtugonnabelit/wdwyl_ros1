@@ -1,22 +1,25 @@
 #! /usr/bin/env python3
 
+import rospy, tf
 from geometry_msgs.msg import Pose, PoseStamped
 from moveit_commander.conversions import pose_to_list
 from moveit_commander import PlannerInterfaceDescription, MoveGroupCommander, PlanningSceneInterface
 
 from math import pi, tau, dist, fabs, cos
 
+import tf.transformations
+
 # Constants variables
 CONTROL_RATE = 10 #Hz
 POS_TOL = 0.01  #m
 ORI_TOL = 0.01  #m
-MAX_VEL_SCALE_FACTOR = 0.05
-MAX_ACC_SCALE_FACTOR = 0.05
+MAX_VEL_SCALE_FACTOR = 0.1
+MAX_ACC_SCALE_FACTOR = 0.1
 INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  #rad
 LOCALIZE_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
 CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
-GRIPPER_OPEN = 1100     #0.1mm
-GRIPPER_CLOSE = 400     #0.1mm
+GRIPPER_OPEN = 1000     #0.1mm
+GRIPPER_CLOSE = 600     #0.1mm
 
 
 def all_close(goal, actual, tolerance):
@@ -47,4 +50,19 @@ def all_close(goal, actual, tolerance):
         return d <= tolerance and cos_phi_half >= cos(tolerance / 2.0)
 
     return True
+
+def get_pose(x, y, z, roll, pitch, yaw):
+
+    pose = Pose()
+    pose.position.x = x
+    pose.position.y = y
+    pose.position.z = z
+
+    ori_in_quat = tf.transformations.quaternion_from_euler(roll, pitch, yaw, axes='sxyz')
+    pose.orientation.x = ori_in_quat[0]
+    pose.orientation.y = ori_in_quat[1]
+    pose.orientation.z = ori_in_quat[2]
+    pose.orientation.w = ori_in_quat[3]
+
+    return pose
 

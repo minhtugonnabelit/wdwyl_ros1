@@ -19,14 +19,17 @@ class CollisionManager:
             'cube': 0,
         }
 
+    def add_abitrary_collision_object(self, pose : Pose, obj_ID : str, frame_id : str, size) -> tuple:
+
+        obj_pose = PoseStamped()
+        obj_pose.header.frame_id = frame_id
+        obj_pose.pose = pose
+
+        self._scene.add_box(obj_ID, obj_pose, size=size)
+
+        return self.wait_for_obj_state(obj_name=obj_ID, obj_is_known=True, obj_is_attached=False), obj_ID
+
     def add_collision_object(self, pose : Pose, object_type : str, frame_id : str) -> tuple:
-        r"""
-        Add a collision object to the scene.
-        @param: pose        The pose of the object
-        @param: object_type The type of the object
-        @param: frame_id    The frame id of the object
-        @returns: tuple
-        """
 
         if object_type not in self._object_counter:
             raise ValueError(f"Invalid object name: {object_type}")
@@ -43,14 +46,6 @@ class CollisionManager:
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True), obj_id
     
     def add_box_collision_object(self, pose : Pose, object_type : str, frame_id : str, size : tuple) -> tuple:
-        r"""
-        Add a box collision object to the scene.
-        @param: pose        The pose of the object
-        @param: object_type The type of the object
-        @param: frame_id    The frame id of the object
-        @param: size        The size of the box
-        @returns: tuple
-        """
 
         if object_type not in self._object_counter:
             raise ValueError(f"Invalid object name: {object_type}")
@@ -65,25 +60,29 @@ class CollisionManager:
 
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True), obj_id
     
-    def remove_collision_object(self, obj_id : str) -> tuple:
-        r"""
-        Remove a collision object from the scene.
-        @param: obj_id The name of the object
-        @returns: tuple
-        """
+    def remove_collision_object(self, obj_id = None) -> tuple:
 
-        self._scene.remove_world_object(obj_id)
-        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=False, obj_is_attached=False)
+        if obj_id is None:
+            self._scene.remove_world_object()
+        else:
+            self._scene.remove_world_object(obj_id)
+    
+    def attach_object(self, eef_link, obj_id, ):
 
+
+        self._scene.attach_mesh(eef_link, obj_id, )
+        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True)
+    
+    def detach_object(self, link=None, name=None):
+
+        self._scene.remove_attached_object(link=link, name=name)
+        if name is not None:
+            return self.wait_for_obj_state(obj_name=name, obj_is_known=True, obj_is_attached=False)
+        else:
+            return True
+        
     def wait_for_obj_state(self, obj_name : str, obj_is_known : bool, obj_is_attached : bool, timeout : float = 4) -> bool:
-        r"""
-        Wait for the object to be in the desired state.
-        @param: obj_name        The name of the object
-        @param: obj_is_known    The object is known to the scene
-        @param: obj_is_attached The object is attached to the robot
-        @param: timeout         The time to wait for the object to be in the desired state
-        @returns: bool
-        """
+
         start = rospy.get_time()
         seconds = rospy.get_time()
         while (seconds - start < timeout) and not rospy.is_shutdown():
@@ -100,26 +99,3 @@ class CollisionManager:
             seconds = rospy.get_time()
 
         return False
-    
-    def attach_object(self, eef_link, obj_id, touch_links):
-        r"""
-        Attach an object to the end effector of the robot.
-        @param: eef_link    The end effector link of the robot
-        @param: obj_id      The name of the object to be attached
-        @param: touch_links The links that can touch the object
-
-        """
-
-        self._scene.attach_mesh(eef_link, obj_id, touch_links=touch_links)
-        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True)
-    
-    def detach_object(self, obj_id, touch_links):
-        r"""
-        Detach an object from the end effector of the robot.
-        @param: obj_id      The name of the object to be detached
-        @param: touch_links The links that can touch the object
-
-        """
-
-        self._scene.remove_attached_object(obj_id, touch_links=touch_links)
-        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=False)
