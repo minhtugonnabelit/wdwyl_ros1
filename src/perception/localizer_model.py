@@ -37,23 +37,81 @@ class RealSense:
 
         # Define detection threshold
         self.threshold = 0.5
-        
-        # Broadcasting the static tf from camera to toolpose
-        if tool_link is not None:
-            self.static_broadcaster = tf2_ros.StaticTransformBroadcaster()
-            self.static_broadcaster.sendTransform((TX, TY, TZ), (0, 0, 0, 1), rospy.Time.now(), "camera_link", tool_link)
+
+
+    def get_crate_pose(self) -> list:
+        r"""
+        Get the position (translation only) of the detected crate. Only works when the get_crate flag is set to True.
+        @returns: list The position of the crate in the real-world coordinates."""
+
+        if self.get_crate:
+            return self.crate_pos
         else:
-            rospy.logwarn("Tool link not provided, skipping static tf broadcasting")
-
-
-    def get_crate_pos(self):
-        return self.crate_pos
+            return None
+        # return self.crate_pos
     
-    def get_bottle_pos(self):
-        return self.bottle_pos
+    def get_bottle_pose(self) -> list:
+        r"""
+        Get the position (translation only) of the detected bottle.
+        @returns: list The position of the bottle in the real-world coordinates."""
+
+        if self.get_bottle:
+            return self.bottle_pos
+        else:
+            return None 
+        # return self.bottle_pos
+    
+    def get_bottle_num(self) -> int:
+        r"""
+        Get the number of bottles detected.
+        @returns: int The number of bottles detected"""
+
+        return 0
+    
+    def get_botte_type(self) -> str:
+        r"""
+        Get the type of the detected bottle.
+        @returns: str The type of the bottle"""
+
+        return ""
+    
+    def setCrateFlag(self, flag: bool, wait=False):
+        r"""
+        Set the flag to enable the crate detection.
+        @param: flag A boolean value"""
+
+        self.get_crate = flag
+
+        if wait and self.get_crate == True:
+            while self.crate_pos is None:
+                pass
+
+        return self.get_crate
+        
+    def setBottleFlag(self, flag: bool, wait=False):
+        r"""
+        Set the flag to enable the bottle detection.
+        @param: flag A boolean value"""
+
+        self.get_bottle = flag
+
+        if wait:
+            while self.bottle_pos is None:
+                pass
+
+        return self.get_bottle
+        
+    def setClassifyFlag(self, flag: bool, wait=False):
+        r"""
+        Set the flag to enable the classification.
+        @param: flag A boolean value"""
+
+        return False
+
+
 
     # Projecting a 2D point to a 3D image plane:
-    def project_2D_to_3D(self, u, v, depth):
+    def project_2D_to_3D(self, u, v, depth) -> np.array:
 
         if not self._on_UR:    
             # Calculate the 3D point (with end of effector frame)
@@ -220,9 +278,6 @@ class RealSense:
             cv2.circle(img, tuple(bottom_right), 5, (255, 255, 0), -1)
             cv2.circle(img, tuple(bottom_left), 5, (0, 255, 255), -1)
 
-    def broadcast(self):
-
-        pass
 
 # if __name__ == '__main__':
 #     # Initialize the ROS Node

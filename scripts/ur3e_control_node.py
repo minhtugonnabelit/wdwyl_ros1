@@ -1,10 +1,10 @@
 #! /usr/bin/env python3
 
 import rospy
-import tf
+import tf2_ros
 
 # Importing planner module
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 from visualization_msgs.msg import Marker
 from ur3e_controller.UR3e import UR3e
 from ur3e_controller.collision_manager import CollisionManager
@@ -13,11 +13,24 @@ from ur3e_controller.utility import *
 # Importing perception module
 from perception.localizer_model import RealSense
 
+import threading
+from threading import Thread
+from copy import deepcopy
+
 # @TODO: Implementing loading scene with object detected
 # @TODO: initializing a static tf from camera to toolpose via static broadcaster
 
 
+BOX_01_POSE = get_pose(-172.44 * 0.001, -324 * 0.001, 54.7 * 0.001, 0, 0, 0)
+BOX_02_POSE = get_pose(-193.42 * 0.001, -400 * 0.001, 54.44 * 0.001, 0, 0, 0)
+TEST_POSE_TARGET = get_pose(0.117, -0.104, 0.36, 0, 0, 10.65)
+
+AVAILABLE_MESHES = ["coke", "pepsi", "sprite", "fanta"]
+
+
 class MissionPlanner:
+
+    FINISHED = False
 
     def __init__(self) -> None:
 
@@ -35,55 +48,110 @@ class MissionPlanner:
             "visualization_marker", Marker, queue_size=10)
 
         # Initialize the perception module
-        # self._rs = RealSense(on_UR=True, tool_link=ee_link)
+        self.rs = RealSense(on_UR=True)
 
-        # Initial action to be performed
-
-        # self.setup_scene()
-        self._ur3e.home()
+        self.setup_scene()
+        self._ur3e.move_to_hang()
         self._ur3e.open_gripper(force=400)
+
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.thread = threading.Thread(target=self.tf_handler)
+        # self.thread.daemon = True
+        # self.thread.start()
+
+        self.bottle_pose = Pose()
+        self.crate_pose = Pose()
 
         rospy.on_shutdown(self.cleanup)
 
     def setup_scene(self):
 
-        # Add static collision object rather than the trolley and the plate
-        wall = get_pose(155 * 0.001, -295 * 0.001, 105 * 0.001, 0, 0, 1.57)
-        _, self.wall_ID = self.collisions.add_abitrary_collision_object(
-            pose=wall, obj_ID="wall", frame_id="base", size=(0.34, 0.1, 0.18))
-
-        ceilling = get_pose(0 * 0.001, 0 * 0.001, 605 * 0.001, 0, 0, 0)
-        _, self.ceilling_ID = self.collisions.add_abitrary_collision_object(
-            pose=ceilling, obj_ID="ceilling", frame_id="base", size=(1.5, 1.5, 0.01))
-
         rospy.sleep(1)
+
+    def tf_handler(self):
+        r"""
+        for testing purpose"""
+
+        while not self.FINISHED:
+
+            t = MissionPlanner.__get_TransformStamped_from_pose(pose=TEST_POSE_TARGET,
+                                                              frame_id="tool0",
+                                                              child_frame_id="crate_center")
+
+            self.tf_broadcaster.sendTransform(t)
+
+            rospy.sleep(1)
 
     def box_pick(self):
 
         rospy.loginfo("box pick action")
-        end_effector_link = self._ur3e.get_end_effector_link()
 
         # Move the robot to the localize pose
-        box_pose = get_pose(-172.44 * 0.001, -324 *
-                            0.001, 54.7 * 0.001, 0, 0, 0)
-        _, box_ID = self.collisions.add_box_collision_object(pose=box_pose,
-                                                             object_type="cube",
-                                                             frame_id="base",
+        cone_pose = TEST_POSE_TARGET
+        _, cone_ID = self.collisions.add_cone_collision_object(pose=cone_pose,
+                                                             object_type="cone",
+                                                             frame_id="tool0",
                                                              size=(0.06, 0.06, 0.06))
-        rospy.sleep(1)
+
+        target_marker = MissionPlanner.__create_marker(
+            "tool0", 2, TEST_POSE_TARGET)
+        self.marker_pub.publish(target_marker)
 
         goal_pose = PoseStamped()
-        goal_pose.pose = box_pose
-        goal_pose.header.frame_id = "base"
-        goal_pose.pose = get_pose(-172.44 * 0.001, -
-                                  324 * 0.001, 54.7 * 0.001, 0, 3.14, 0)
+        goal_pose.pose = TEST_POSE_TARGET
+        goal_pose.header.frame_id = "tool0"
         self._ur3e.go_to_pose_goal(goal_pose)
         rospy.sleep(1)
+        
+        done = False
+        on_going = False
+
+        while not rospy.is_shutdown():
+
+            if not done:
+
+                self.set_transform_target(pose=TEST_POSE_TARGET,
+                                          child_frame_id="crate_center",
+                                          frame_id="tool0")
+
+                try:
+                    tf_received = self.tf_buffer.lookup_transform(
+                        "base_link_inertia", "crate_center", rospy.Time(0), rospy.Duration(1.0))
+                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                    self.rate.sleep()
+                    continue
+
+                pose = MissionPlanner.__get_PoseStamped_from_TransformStamped(
+                    tf_received)
+
+                self.visualize_target_pose(pose.pose)
+
+                self._ur3e.go_to_pose_goal(pose)
+                rospy.sleep(1)
+
+                done = True
+
+
+        current_pose = self._ur3e.get_current_pose()
+        goal_pose = PoseStamped()
+        goal_pose.pose = current_pose
+        goal_pose.header.frame_id = "trolley"
+        goal_pose.pose.position.x -= 0.1
+        self._ur3e.go_to_pose_goal(goal_pose)
+        rospy.sleep(1)
+
+        plan, fraction = self._ur3e.gen_carternian_path(goal_pose)
+        self._ur3e.display_traj(plan)
+        rospy.sleep(1)
+
+        self._ur3e.execute_plan(plan)
 
         self._ur3e.close_gripper(force=400)
         rospy.sleep(3)
 
-        self.collisions.attach_object(end_effector_link, box_ID)
+        # self.collisions.attach_object(end_effector_link, box_ID)
 
         target_pose_stamped = PoseStamped()
         target_pose_stamped.pose = get_pose(309 * 0.001, -320 * 0.001,
@@ -95,20 +163,180 @@ class MissionPlanner:
         self._ur3e.open_gripper(force=400)
         rospy.sleep(3)
 
-        self.collisions.detach_object(link=end_effector_link, name=box_ID)
+        # self.collisions.detach_object(link=end_effector_link, name=box_ID)
         rospy.sleep(1)
 
         self._ur3e.home()
 
 
     def system_loop(self):
+        r"""
+        The main system loop for the mission planner
+        """
 
         rospy.loginfo("Starting system loop")
 
-        done = False
-        on_going = False
-
         while not rospy.is_shutdown():
+
+            ## =========================================================================== ##
+            # =================STATE PRE-0: MOVE TO THE CRATE CENTER======================= #
+            # ----------------------------------------------------------------------------- #
+            # Move to the crate center and wait for the crate pose, then save the crate     #
+            # pose for further use as reset state after each bottle sorted                  #
+            ## =========================================================================== ##
+            
+            if self.crate_pose is None:
+
+                self._ur3e.move_to_hang()
+                self.rs.setCrateFlag(True, wait=True)
+                pose = self.rs.get_crate_pose()
+                self.rs.setCrateFlag(False)
+
+                # Re-align end effector to the crate center in plane xy only.
+                pose = get_pose(
+                    self.crate_pose[0],     # x
+                    self.crate_pose[1],     # y
+                    0,                      # z
+                    0,                      # roll
+                    0,                      # pitch
+                    self.crate_pose[3]      # yaw
+                )
+
+                # Start broadcasting the crate center
+                self.set_transform_target(pose=pose,
+                                          child_frame_id="crate_center",
+                                          frame_id="tool0")
+
+                # Move to crate center in plane xy
+                try:
+                    tf_received = self.tf_buffer.lookup_transform(
+                        "base_link_inertia", "crate_center", rospy.Time(0), rospy.Duration(1.0))
+                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+
+                    # If the transform is not received, wait for the next loop
+                    self.rate.sleep()
+                    continue
+
+                self.crate_pose = MissionPlanner.__get_PoseStamped_from_TransformStamped(
+                    tf_received)
+
+            # Visualize the target pose
+            self.visualize_target_pose(self.crate_pose.pose)
+
+            # Command the robot to move to the target pose.  State reset at pose right on top of the crate center. The system have to ensure that the crate is not moved during the process
+            self._ur3e.go_to_pose_goal(self.crate_pose)
+            rospy.sleep(1)
+
+            ## =========================================================================== ##
+            # =================STATE 0: LOCALIZE THE BOTTLE TO BE PICKED==================== #
+            # ----------------------------------------------------------------------------- #
+            # Localize the bottle to be picked and move to pick the bottle                  #
+            ## =========================================================================== ##
+
+            self.rs.setBottleFlag(True, wait=True)
+            bottle_num = self.rs.get_bottle_num()
+
+            if bottle_num == 0:
+
+                rospy.loginfo("All bottles have been sorted!")
+                rospy.signal_shutdown("Finish sorting mission!")
+
+            bottle_pose_raw = self.rs.get_bottle_pose()
+            self.rs.setBottleFlag(False)
+
+            # Re-align end effector to the bottle in plane xy only.
+            pose = get_pose(
+                bottle_pose_raw[0],     
+                bottle_pose_raw[1],     
+                0,           
+                0,           
+                0,           
+                bottle_pose_raw[3]      
+            )
+
+            # Start broadcasting the bottle center
+            self.set_transform_target(pose=pose,
+                                        child_frame_id="bottle_center",
+                                        frame_id="tool0")
+
+            # Move to bottle center in plane xy
+            try:
+
+                tf_received = self.tf_buffer.lookup_transform(
+                    "base_link_inertia", "bottle_center", rospy.Time(0), rospy.Duration(1.0))
+
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                self.rate.sleep()
+                continue
+
+            bottle_pose_stamped = MissionPlanner.__get_PoseStamped_from_TransformStamped(
+                tf_received)
+
+            self.visualize_target_pose(bottle_pose_stamped.pose)
+            self._ur3e.go_to_pose_goal(bottle_pose_stamped)
+
+            # Command the robot to move to the lower the gripper to the bottle
+            goal = deepcopy(bottle_pose_stamped)
+            goal.pose.position.z -= bottle_pose_raw[2]
+
+            self.visualize_target_pose(goal.pose)
+            self._ur3e.go_to_pose_goal(goal)
+
+            self._ur3e.close_gripper(force=400)
+            rospy.sleep(3)
+
+            # Attach the bottle to the end effector of the robot in planning scene
+            _, bottle_id = self.collisions.add_bottle(initial_pose=bottle_pose_stamped.pose)
+            self.collisions.attach_object(
+                eef_link=self._ur3e.get_end_effector_link(), obj_id=bottle_id)
+            
+            ## =========================================================================== ##
+            # =================STATE 1: CLASSIFY THE OBJECT AND DELIVER==================== #
+            # ----------------------------------------------------------------------------- #
+            # Classify the object and deliver to the specified location                     #
+            ## =========================================================================== ##
+
+            # Move the robot to the classify pose
+            classify_pose_stamped = PoseStamped()
+            classify_pose_stamped.pose = CLASSIFY_POSE
+            classify_pose_stamped.header.frame_id = "base_link_inertia"
+            self._ur3e.go_to_pose_goal(classify_pose_stamped)
+
+            self.rs.setClassifyFlag(True, wait=True)
+            bottle_class = self.rs.get_bottle_class()
+            self.rs.setClassifyFlag(False)
+
+            # Set type of bottle by changing the object name in planning scene and its color
+            self.collisions.update_bottle_type(bottle_id, bottle_class)
+
+            # Specify the deliver pose for the bottle type
+            if bottle_class == "coke":
+                deliver_pose = get_pose(
+                    0.5, 0.5, 0.5, 0, 0, 0)
+                
+            elif bottle_class == "pepsi":
+                deliver_pose = get_pose(
+                    0.5, -0.5, 0.5, 0, 0, 0)
+                
+            elif bottle_class == "sprite":
+                deliver_pose = get_pose(
+                    -0.5, 0.5, 0.5, 0, 0, 0)
+                
+            else:
+                deliver_pose = get_pose(
+                    -0.5, -0.5, 0.5, 0, 0, 0)
+
+            # Plan a collision free path to the deliver pose
+            deliver_pose_stamped = PoseStamped()
+            deliver_pose_stamped.pose = deliver_pose
+            deliver_pose_stamped.header.frame_id = "base_link_inertia"
+            self._ur3e.go_to_pose_goal(deliver_pose_stamped)
+            rospy.sleep(1)
+
+            # Move the robot to the deliver pose and drop the bottle
+            self._ur3e.open_gripper(force=400)
+
+
 
             # State 1: Localize the bottle to be picked and move to pick the bottle
 
@@ -149,20 +377,124 @@ class MissionPlanner:
 
             rospy.sleep(1)
 
+    def set_transform_target(self, pose: Pose, child_frame_id: str, frame_id: str = "base_link_inertia",):
+
+        transform_target = MissionPlanner.__get_TransformStamped_from_pose(pose=pose,
+                                                                         frame_id=frame_id,
+                                                                         child_frame_id=child_frame_id)
+
+        self.tf_broadcaster.sendTransform(transform_target)
+
+        rospy.sleep(0.01)
+
+    def visualize_target_pose(self, pose: Pose, type: int = 2, frame_id: str = "base_link_inertia"):
+        r"""
+        Visualize the target pose in rviz
+        @param: pose The pose to be visualized
+        @param: frame_id The frame id of the pose, default is base_link_inertia"
+        """
+
+        target_marker = MissionPlanner.__create_marker(
+            frame_id, type, pose)
+        self.marker_pub.publish(target_marker)
+
     def cleanup(self):
 
         rospy.loginfo("Cleaning up")
 
-        # self._ur3e.home()
+        self.FINISHED = True
+
+        self._ur3e.move_to_hang()
         self._ur3e.shutdown()
 
         # remove all collision objects
         self.collisions.remove_collision_object()
 
+        rospy.logdebug("Waiting for the thread to join")
+        self.thread.join()
+
         rospy.loginfo("Mission complete")
+
+    @staticmethod
+    def __create_marker(frame: str, type: int, pose: Pose, scale=[0.01, 0.01, 0.01], color=[0, 1, 0, 1]):
+        r"""
+        Create a marker for visualization
+
+        @param: frame The frame id of the marker
+        @param: type The type of the marker, 0: Arrow, 1: Cube, 2: Sphere, 3: Cylinder, 4: Line Strip, 5: Line List, 6: Cube List, 7: Sphere List, 8: Points, 9: Text
+        @param: pose The pose of the marker
+        @param: scale The scale of the marker
+        @param: color The color of the marker
+        @returns: Marker A marker instance
+
+        """
+        marker = Marker()
+
+        marker.header.frame_id = frame
+        marker.header.stamp = rospy.Time.now()
+
+        # set shape, Arrow: 0; Cube: 1 ; Sphere: 2 ; Cylinder: 3
+        marker.type = 2
+        marker.id = 0
+
+        # Set the pose of the marker
+        marker.pose = pose
+
+        # Set the scale of the marker
+        marker.scale.x = scale[0]
+        marker.scale.y = scale[1]
+        marker.scale.z = scale[2]
+
+        # Set the color
+        marker.color.r = color[0]
+        marker.color.g = color[1]
+        marker.color.b = color[2]
+        marker.color.a = color[3]
+
+        return marker
+
+    @staticmethod
+    def __get_TransformStamped_from_pose(pose: Pose, frame_id: str, child_frame_id: str) -> TransformStamped:
+        r"""
+        Convert a pose to a TransformStamped instance
+
+        @param: pose The pose to be converted
+        @param: frame_id The frame id of the pose
+        @param: child_frame_id The child frame id of the pose
+        @returns: TransformStamped A TransformStamped instance
+
+        """
+        ts = TransformStamped()
+        ts.header.stamp = rospy.Time.now()
+        ts.header.frame_id = frame_id
+        ts.child_frame_id = child_frame_id
+        ts.transform.translation.x = pose.position.x
+        ts.transform.translation.y = pose.position.y
+        ts.transform.translation.z = pose.position.z
+        ts.transform.rotation = pose.orientation
+
+        return ts
+
+    @staticmethod
+    def __get_PoseStamped_from_TransformStamped(ts: TransformStamped) -> PoseStamped:
+        r"""
+        Convert a TransformStamped to a PoseStamped instance
+
+        @param: ts The TransformStamped to be converted
+        @returns: PoseStamped A PoseStamped instance
+
+        """
+        ps = PoseStamped()
+        ps.header.stamp = ts.header.stamp
+        ps.header.frame_id = ts.header.frame_id
+        ps.pose.position.x = ts.transform.translation.x
+        ps.pose.position.y = ts.transform.translation.y
+        ps.pose.position.z = ts.transform.translation.z
+        ps.pose.orientation = ts.transform.rotation
+
+        return ps
 
 
 if __name__ == "__main__":
     mp = MissionPlanner()
-    mp.box_pick()
-    # mp.system_loop()
+    mp.system_loop()

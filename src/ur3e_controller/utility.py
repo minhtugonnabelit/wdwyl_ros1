@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+from dataclasses import dataclass
 
 import rospy, tf
 from geometry_msgs.msg import Pose, PoseStamped
@@ -13,13 +14,23 @@ import tf.transformations
 CONTROL_RATE = 10 #Hz
 POS_TOL = 0.01  #m
 ORI_TOL = 0.01  #m
-MAX_VEL_SCALE_FACTOR = 0.1
-MAX_ACC_SCALE_FACTOR = 0.1
+MAX_VEL_SCALE_FACTOR = 0.4
+MAX_ACC_SCALE_FACTOR = 0.4
 INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  #rad
 LOCALIZE_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
 CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
 GRIPPER_OPEN = 1000     #0.1mm
 GRIPPER_CLOSE = 600     #0.1mm
+
+
+@dataclass
+class Bottle:
+    r"""
+    A class to represent a bottle object.
+    """
+    id : str
+    type : str
+    pose : Pose
 
 
 def all_close(goal, actual, tolerance):
