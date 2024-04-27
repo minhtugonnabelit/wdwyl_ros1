@@ -42,7 +42,7 @@ class RealSense:
         self.threshold = 0.5
 
 
-    def get_crate_pose(self) -> list:
+    def get_crate_pose(self) -> np.array:
         r"""
         Get the position (translation only) of the detected crate. Only works when the get_crate flag is set to True.
         @returns: list The position of the crate in the real-world coordinates."""
@@ -53,7 +53,7 @@ class RealSense:
             return None
         # return self.crate_pos
     
-    def get_bottle_pose(self) -> list:
+    def get_bottle_pose(self) -> np.array:
         r"""
         Get the position (translation only) of the detected bottle.
         @returns: list The position of the bottle in the real-world coordinates."""
@@ -70,13 +70,7 @@ class RealSense:
         Number of bottles detected inside the crate"""
 
         return self._bottle_num
-    
-    @property
-    def bottle_type(self):
-        r"""
-        Bottle type classified """
 
-        return self._bottle_type
     
     # def get_bottle_num(self) -> int:
     #     r"""

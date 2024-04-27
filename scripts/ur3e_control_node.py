@@ -172,43 +172,43 @@ class MissionPlanner:
             # Move to the crate center and wait for the crate pose, then save the crate     #
             # pose for further use as reset state after each bottle sorted                  #
             ## =========================================================================== ##
+            # if self.crate_pose is None:
 
-            if self.crate_pose is None:
+            self._ur3e.move_to_hang()
+            self.rs.setCrateFlag(True, wait=True)
+            pose = self.rs.get_crate_pose()
+            self.rs.setCrateFlag(False)
 
-                self._ur3e.move_to_hang()
-                self.rs.setCrateFlag(True, wait=True)
-                pose = self.rs.get_crate_pose()
-                self.rs.setCrateFlag(False)
+            # Re-align end effector to the crate center in plane xy only.
+            pose = list_to_pose(
+                [self.crate_pose[0],     # x
+                    self.crate_pose[1],     # y
+                    0,                      # z
+                    0,                      # roll
+                    0,                      # pitch
+                    self.crate_pose[3]]      # yaw
+            )
 
-                # Re-align end effector to the crate center in plane xy only.
-                pose = list_to_pose(
-                    [self.crate_pose[0],     # x
-                     self.crate_pose[1],     # y
-                     0,                      # z
-                     0,                      # roll
-                     0,                      # pitch
-                     self.crate_pose[3]]      # yaw
-                )
+            # Start broadcasting the crate center
+            self.set_transform_target(pose=pose,
+                                        child_frame_id="crate_center",
+                                        frame_id="tool0")
 
-                # Start broadcasting the crate center
-                self.set_transform_target(pose=pose,
-                                          child_frame_id="crate_center",
-                                          frame_id="tool0")
+            # Move to crate center in plane xy
+            try:
+                tf_received = self.tf_buffer.lookup_transform(
+                    "base_link_inertia", "crate_center", rospy.Time(0), rospy.Duration(1.0))
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                self.rate.sleep()
+                continue            # If the transform is not received, wait for the next loop
+            
+            ### @TODO: OFFSET FOR THE CAMERA TO BE ON TOP OF CRATE CENTER TO BE MEASURED 
+            self.crate_pose = get_PoseStamped_from_TransformStamped(
+                tf_received)
 
-                # Move to crate center in plane xy
-                try:
-                    tf_received = self.tf_buffer.lookup_transform(
-                        "base_link_inertia", "crate_center", rospy.Time(0), rospy.Duration(1.0))
-                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-                    self.rate.sleep()
-                    continue            # If the transform is not received, wait for the next loop
-
-                self.crate_pose = get_PoseStamped_from_TransformStamped(
-                    tf_received)
-
-                # Add mesh of the crate into planning scene for collision avoidance
-                self.collisions.add_collision_object(
-                    obj_id="crate", pose=self.crate_pose, object_type="crate", frame_id="base_link_inertia")
+            # Add mesh of the crate into planning scene for collision avoidance
+            self.collisions.add_collision_object(
+                obj_id="crate", pose=self.crate_pose, object_type="crate", frame_id="base_link_inertia")
 
             # Visualize the target pose
             self.visualize_target_pose(self.crate_pose.pose)
@@ -218,7 +218,7 @@ class MissionPlanner:
             rospy.sleep(1)
 
             ## =========================================================================== ##
-            # =================STATE 0: LOCALIZE THE BOTTLE TO BE PICKED==================== #
+            # =================STATE 0: LOCALIZE THE BOTTLE TO BE PICKED=================== #
             # ----------------------------------------------------------------------------- #
             # Localize the bottle to be picked and move to pick the bottle                  #
             ## =========================================================================== ##
@@ -285,7 +285,7 @@ class MissionPlanner:
             ## =========================================================================== ##
             # =================STATE 1: CLASSIFY THE OBJECT AND DELIVER==================== #
             # ----------------------------------------------------------------------------- #
-            # Classify the object and deliver to the specified location                     #
+            #           Classify the object and deliver to the specified location           #
             ## =========================================================================== ##
 
             # Turn on classification tag
@@ -298,7 +298,7 @@ class MissionPlanner:
             while self.rs.bottle_type is None:    
                 self._ur3e.go_to_goal_joint(target_js, wait=False)
             
-            self._ur3e.stop() # to stop 
+            self._ur3e.stop() 
 
             bottle_class = deepcopy(self.rs.bottle_type)
             self.rs.setClassifyFlag(False)      # stop classification task performing in RGB callback
@@ -328,7 +328,8 @@ class MissionPlanner:
             #                                                                               #
             ## =========================================================================== ##
 
-            # State 3: Back to home position ready for prepeared action
+            self._ur3e.elevate_ee(delta_z=0)
+
 
             # Move the robot to the home position
 
