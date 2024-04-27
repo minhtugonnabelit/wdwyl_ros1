@@ -28,8 +28,11 @@ class RealSense:
         # Initialize the flag to get the crate and bottle positions
         self.get_crate = False
         self.get_bottle = False
+        self.obstructed = False
         self.crate_pos = None
         self.bottle_pos = None
+        self._bottle_num = 0
+        self._bottle_type = ""
 
         # Load the YOLO model
         self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/config/detect/detect/train/weights/best.pt'
@@ -60,20 +63,34 @@ class RealSense:
         else:
             return None 
         # return self.bottle_pos
-    
-    def get_bottle_num(self) -> int:
-        r"""
-        Get the number of bottles detected.
-        @returns: int The number of bottles detected"""
 
-        return 0
-    
-    def get_botte_type(self) -> str:
+    @property
+    def bottle_num(self):
         r"""
-        Get the type of the detected bottle.
-        @returns: str The type of the bottle"""
+        Number of bottles detected inside the crate"""
 
-        return ""
+        return self._bottle_num
+    
+    @property
+    def bottle_type(self):
+        r"""
+        Bottle type classified """
+
+        return self._bottle_type
+    
+    # def get_bottle_num(self) -> int:
+    #     r"""
+    #     Get the number of bottles detected.
+    #     @returns: int The number of bottles detected"""
+
+    #     return self.bottle_num
+    
+    # def get_botte_type(self) -> str:
+    #     r"""
+    #     Get the type of the detected bottle.
+    #     @returns: str The type of the bottle"""
+
+    #     return "" 
     
     def setCrateFlag(self, flag: bool, wait=False):
         r"""

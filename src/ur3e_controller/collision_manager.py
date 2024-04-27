@@ -85,11 +85,11 @@ class CollisionManager:
         self.scene.attach_mesh(eef_link, obj_id, )
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True)
 
-    def detach_object(self, link=None, name=None):
+    def detach_object(self, eef_link=None, obj_id=None):
 
-        self.scene.remove_attached_object(link=link, name=name)
-        if name is not None:
-            return self.wait_for_obj_state(obj_name=name, obj_is_known=True, obj_is_attached=False)
+        self.scene.remove_attached_object(link=eef_link, name=obj_id)
+        if obj_id is not None:
+            return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=False)
         else:
             return True
 

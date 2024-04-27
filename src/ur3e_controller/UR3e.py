@@ -14,6 +14,8 @@ from ur3e_controller.utility import *
 from ur3e_controller.gripper import Gripper
 from ur3e_controller.collision_manager import CollisionManager
 
+from copy import deepcopy
+
 
 class UR3e:
 
@@ -63,7 +65,7 @@ class UR3e:
 
         # Add a small fragment piece as gripper cable node
         cable_cap_pose = PoseStamped()
-        cable_cap_pose.pose = get_pose(-0.045, -0.01, 0.01, 1.57, 0, 1.57)
+        cable_cap_pose.pose = list_to_pose([-0.045, -0.01, 0.01, 1.57, 0, 1.57])
         cable_cap_pose.header.frame_id = "tool0"
         self._scene.add_cylinder("cable_cap", cable_cap_pose, 0.02, 0.01)
         self._scene.attach_mesh("tool0", "cable_cap", touch_links=[
@@ -91,20 +93,18 @@ class UR3e:
 
     # Robot control basic actions
 
-    def go_to_goal_joint(self, joint_angle):
+    def go_to_goal_joint(self, joint_goal, wait=True):
         r"""
         Move the robot to the specified joint angles.
         @param: joint_angle A list of floats
         @returns: bool True if successful by comparing the goal and actual joint angles
         """
 
-        if not isinstance(joint_angle, list):
+        if not isinstance(joint_goal, list):
             rospy.logerr("Invalid joint angle")
             return False
 
-        joint_goal = self._group.get_current_joint_values()
-        joint_goal = joint_angle
-        self._group.go(joint_angle, wait=True)
+        self._group.go(joint_goal, wait=wait)
         self._group.stop()
 
         cur_joint = self._group.get_current_joint_values()
@@ -129,16 +129,6 @@ class UR3e:
 
         cur_pose = self._group.get_current_pose().pose
         return all_close(pose_goal.pose, cur_pose, 0.01)
-    
-    def smoothing_path(self, cart_traj: list, resolution=0.01, jump_thresh=0.0):
-        r"""
-        Smooth the path using the path constraints.
-        @param: plan A RobotTrajectory instance
-        @returns: RobotTrajectory instance for smoothed path with addtional interpolation points
-        """
-        (interp_traj, fraction) = self._group.compute_cartesian_path(
-            cart_traj, resolution, jump_thresh,)
-        return interp_traj, fraction
 
     def gen_carternian_path(self, target_pose: Pose, max_step=0.001, jump_thresh=0.0):
         r"""
@@ -170,7 +160,7 @@ class UR3e:
             waypoints, max_step, jump_thresh, avoid_collisions=True)
         return plan, fraction   
 
-    def execute_plan(self, plan):
+    def execute_plan(self, plan : RobotTrajectory):
         r"""
         Execute the plan.
         @param: plan A RobotTrajectory instance
@@ -178,7 +168,11 @@ class UR3e:
         """
         self._group.execute(plan, wait=True)
         self._group.stop()
-        return all_close(plan, self._group.get_current_pose().pose, 0.01)
+        return all_close(plan.joint_trajectory.points[-1], self._group.get_current_pose().pose, 0.01)
+    
+    def stop(self):
+
+        self._group.stop()
 
     # Delicted actions
 
@@ -205,7 +199,19 @@ class UR3e:
 
         cur_joint = self._group.get_current_joint_values()
         return all_close(joint_goal, cur_joint, 0.01)
+    
+    def elevate_ee(self, delta_z : float) -> bool:
+        r"""
+        """
 
+        goal = deepcopy(self._group.get_current_pose().pose)
+        goal.position.z += delta_z
+
+        plan, _ = self.gen_carternian_path(target_pose=goal)
+        done = self.execute_plan(plan=plan)
+        
+        return done
+        
 
     # Gripper control
 
