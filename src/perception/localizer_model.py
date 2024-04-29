@@ -28,11 +28,9 @@ class RealSense:
         # Initialize the flag to get the crate and bottle positions
         self.get_crate = False
         self.get_bottle = False
-        self.obstructed = False
         self.crate_pos = None
         self.bottle_pos = None
         self._bottle_num = 0
-        self._bottle_type = ""
 
         # Load the YOLO model
         self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/config/detect/detect/train/weights/best.pt'
@@ -41,29 +39,6 @@ class RealSense:
         # Define detection threshold
         self.threshold = 0.5
 
-
-    def get_crate_pose(self) -> np.array:
-        r"""
-        Get the position (translation only) of the detected crate. Only works when the get_crate flag is set to True.
-        @returns: list The position of the crate in the real-world coordinates."""
-
-        if self.get_crate:
-            return self.crate_pos
-        else:
-            return None
-        # return self.crate_pos
-    
-    def get_bottle_pose(self) -> np.array:
-        r"""
-        Get the position (translation only) of the detected bottle.
-        @returns: list The position of the bottle in the real-world coordinates."""
-
-        if self.get_bottle:
-            return self.bottle_pos
-        else:
-            return None 
-        # return self.bottle_pos
-
     @property
     def bottle_num(self):
         r"""
@@ -71,84 +46,80 @@ class RealSense:
 
         return self._bottle_num
 
-    
-    # def get_bottle_num(self) -> int:
-    #     r"""
-    #     Get the number of bottles detected.
-    #     @returns: int The number of bottles detected"""
+    def get_crate_pose(self) -> np.array:
+        r"""
+        Get the position (translation only) of the detected crate. Only works when the get_crate flag is set to True.
+        @returns: list The position of the crate in the real-world coordinates."""
 
-    #     return self.bottle_num
+        return self.crate_pos
     
-    # def get_botte_type(self) -> str:
-    #     r"""
-    #     Get the type of the detected bottle.
-    #     @returns: str The type of the bottle"""
+    def get_bottle_pose(self) -> np.array:
+        r"""
+        Get the position (translation only) of the detected bottle.
+        @returns: list The position of the bottle in the real-world coordinates."""
 
-    #     return "" 
+        return self.bottle_pos
     
-    def setCrateFlag(self, flag: bool, wait=False):
+    
+    def set_Crate_Flag(self, flag: bool, wait=False):
         r"""
         Set the flag to enable the crate detection.
         @param: flag A boolean value"""
 
         self.get_crate = flag
-
-        if wait and self.get_crate == True:
-            while self.crate_pos is None:
-                pass
+        if not flag:
+            self.crate_pos = None
+        else:
+            if wait:
+                while self.crate_pos is None:
+                    pass
 
         return self.get_crate
         
-    def setBottleFlag(self, flag: bool, wait=False):
+    def set_Bottle_Flag(self, flag: bool, wait=False):
         r"""
         Set the flag to enable the bottle detection.
         @param: flag A boolean value"""
 
         self.get_bottle = flag
-
-        if wait:
-            while self.bottle_pos is None:
-                pass
+        if not flag:
+            self.bottle_pos = None
+        else:
+            if wait:
+                while self.bottle_pos is None:
+                    pass
 
         return self.get_bottle
-        
-    def setClassifyFlag(self, flag: bool, wait=False):
-        r"""
-        Set the flag to enable the classification.
-        @param: flag A boolean value"""
-
-        return False
-
 
 
     # Projecting a 2D point to a 3D image plane:
     def project_2D_to_3D(self, u, v, depth) -> np.array:
-
-        if not self._on_UR:    
-            # Calculate the 3D point (with end of effector frame)
-            x = (u - PX) * depth / FX
-            y = (v - PY) * depth / FY
-
-        else: 
-            # Deploy on UR3
-            x = x + TX
-            y = y + TY
-            depth = depth - TZ
-
-        P_camera = np.array([x, y, depth, 1])  # 3D point in the camera frame
+            
+        # Calculate the 3D point (with end of effector frame)
+        x = (u - PX) * depth / FX
+        y = (v - PY) * depth / FY
         
+        #for UR3
+        x = (x + TX)*-1
+        y = (y + TY)*-1
+        depth = depth - TZ
+
+        P_camera = np.array([x, y, depth, self.yaw])  # 3D point in the camera frame
+
         return P_camera
 
+
     def rgb_callback(self, data):
+
         # Convert the ROS Image message to a cv2 image
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         
-
         if (self.get_crate == True and self.get_bottle == False):
             self.img_processing()
         
         elif (self.get_crate == False and self.get_bottle == True):
-            # # Run YOLO model on the frame
+
+            # Run YOLO model on the frame
             results = self.model(self.rgb_image)[0]
 
             # Annotate the image
@@ -164,8 +135,10 @@ class RealSense:
                     center_x_bottle = int((x1 + x2) / 2)
                     center_y_bottle = int((y1 + y2) / 2)
                     cv2.circle(self.rgb_image, (center_x_bottle, center_y_bottle), 5, (0, 255, 0), -1)  # Change the color and size as needed
+                    
                     # Make sure the depth image is already available and synced with the current RGB frame
                     if self.depth_image is not None:
+                        
                         # Ensure center_x and center_y are within the bounds of the depth image
                         if 0 <= center_x_bottle < self.depth_image.shape[1] and 0 <= center_y_bottle < self.depth_image.shape[0]:
                             depth = self.depth_image[center_y_bottle, center_x_bottle].astype(float)
@@ -183,13 +156,17 @@ class RealSense:
                 
         else:
             pass
+        
+        width = int(self.rgb_image.shape[1] * 1.5)
+        height = int(self.rgb_image.shape[0] * 1.5)
+        self.rgb_image = cv2.resize(self.rgb_image, (width, height))
 
         # Display the image
         cv2.imshow('YOLO Detection', self.rgb_image)
-        # cv2.imshow('Depth Detection', self.depth_image)
         cv2.waitKey(1)  # Add this line to update the window; essential for imshow to work properly
 
     def depth_callback(self, data):
+
         # Convert the ROS Image message to a cv2 image
         self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
 
@@ -201,9 +178,7 @@ class RealSense:
 
     def img_processing(self):
         
-        # img = self.rgb_image.copy()
         img = self.rgb_image
-
 
         # Convert to grayscale
         gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -243,9 +218,9 @@ class RealSense:
         # cv2.drawContours(img, contours, -1, (0, 255, 0), 3)
 
         if contours is not None:
-            # print("contour")
+
             # Draw the contour itself (just for visualization)
-            cv2.drawContours(img, [crate_contour], -1, (0, 255, 0), 3)
+            # cv2.drawContours(img, [crate_contour], -1, (0, 255, 0), 3)
 
             # Calculate the bounding rectangle, which gives us the four points
             rect = cv2.minAreaRect(crate_contour)
@@ -255,8 +230,10 @@ class RealSense:
             # ///////////////////////////////////
             cx_crate, cy_crate = int(rect[0][0]), int(rect[0][1])
             cv2.circle(img, (cx_crate, cy_crate), 5, (0, 255, 0), -1)
+
             # Make sure the depth image is already available and synced with the current RGB frame
             if self.depth_image is not None:
+
                 # Ensure center_x and center_y are within the bounds of the depth image
                 if 0 <= cx_crate < self.depth_image.shape[1] and 0 <= cy_crate < self.depth_image.shape[0]:
                     depth_crate = self.depth_image[cy_crate, cx_crate].astype(float)
@@ -280,6 +257,8 @@ class RealSense:
             if angle > 45:
                 angle -= 90
 
+            self.yaw = angle
+
             # The order of box points: bottom-left, top-left, top-right, bottom-right
             bottom_left, top_left, top_right, bottom_right = box
 
@@ -288,29 +267,3 @@ class RealSense:
             cv2.circle(img, tuple(top_right), 5, (0, 0, 255), -1)
             cv2.circle(img, tuple(bottom_right), 5, (255, 255, 0), -1)
             cv2.circle(img, tuple(bottom_left), 5, (0, 255, 255), -1)
-
-
-# if __name__ == '__main__':
-#     # Initialize the ROS Node
-#     rospy.init_node('realsense_yolo', anonymous=True)
-    
-#     # Create the RealSense object
-#     rs = RealSense()
-
-#     rs.get_bottle = True
-
-#     # Spin to keep the script for exiting
-#     rospy.spin()
-
-#     # Destroy all OpenCV windows
-#     cv2.destroyAllWindows()
-
-# self.depth_intrinsics = rs.intrinsics()
-# self.depth_intrinsics.width = 640  # Assuming width of the depth sensor
-# self.depth_intrinsics.height = 640  # Assuming height of the depth sensor
-# self.depth_intrinsics.ppx = 324.8121337890625  # Principal point x (cx)
-# self.depth_intrinsics.ppy = 230.55308532714844  # Principal point y (cy)
-# self.depth_intrinsics.fx = 612.493408203125  # Focal length x
-# self.depth_intrinsics.fy = 612.2056274414062  # Focal length y
-# self.depth_intrinsics.model = rs.distortion.none  # Assuming no lens distortion
-# self.depth_intrinsics.coeffs = [0, 0, 0, 0, 0]  # Assuming no distortion coefficients

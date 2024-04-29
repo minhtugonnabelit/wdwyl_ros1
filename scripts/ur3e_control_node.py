@@ -12,6 +12,7 @@ from ur3e_controller.utility import *
 
 # Importing perception module
 from perception.localizer_model import RealSense
+from perception.classifier_model import Classifier
 
 import threading
 from threading import Thread
@@ -56,6 +57,7 @@ class MissionPlanner:
 
         # Initialize the perception module
         self.rs = RealSense(on_UR=True)
+        self.classifier = Classifier()
 
         # self.setup_scene()
         self._ur3e.move_to_hang()
@@ -113,7 +115,7 @@ class MissionPlanner:
                     self.rate.sleep()
                     continue
 
-                pose = MissionPlanner.__get_PoseStamped_from_TransformStamped(
+                pose = get_PoseStamped_from_TransformStamped(
                     tf_received)
 
                 self.visualize_target_pose(pose.pose)
@@ -172,12 +174,11 @@ class MissionPlanner:
             # Move to the crate center and wait for the crate pose, then save the crate     #
             # pose for further use as reset state after each bottle sorted                  #
             ## =========================================================================== ##
-            # if self.crate_pose is None:
 
             self._ur3e.move_to_hang()
-            self.rs.setCrateFlag(True, wait=True)
+            self.rs.set_Crate_Flag(True, wait=True)
             pose = self.rs.get_crate_pose()
-            self.rs.setCrateFlag(False)
+            self.rs.set_Crate_Flag(False)
 
             # Re-align end effector to the crate center in plane xy only.
             pose = list_to_pose(
@@ -223,7 +224,7 @@ class MissionPlanner:
             # Localize the bottle to be picked and move to pick the bottle                  #
             ## =========================================================================== ##
 
-            self.rs.setBottleFlag(True, wait=True)
+            self.rs.set_Bottle_Flag(True, wait=True)
 
             if self.rs.bottle_num == 0:
 
@@ -231,7 +232,7 @@ class MissionPlanner:
                 rospy.signal_shutdown("Finish sorting mission!")
 
             bottle_pose_raw = self.rs.get_bottle_pose()
-            self.rs.setBottleFlag(False)
+            self.rs.set_Bottle_Flag(False)
 
             # Re-align end effector to the bottle in plane xy only.
             pose = list_to_pose(
@@ -289,19 +290,19 @@ class MissionPlanner:
             ## =========================================================================== ##
 
             # Turn on classification tag
-            self.rs.setClassifyFlag(True, wait=True)
+            self.classifier.set_classify_flag(True, wait=True)
 
             # Turn wrist 3 joint until bottle type classified
             cur_js = self._ur3e.get_current_joint_values()
             target_js = deepcopy(cur_js)
             target_js[-1] = cur_js[-1] + 1.57
-            while self.rs.bottle_type is None:    
+            while self.classifier.bottle_class is None:    
                 self._ur3e.go_to_goal_joint(target_js, wait=False)
             
             self._ur3e.stop() 
 
-            bottle_class = deepcopy(self.rs.bottle_type)
-            self.rs.setClassifyFlag(False)      # stop classification task performing in RGB callback
+            bottle_class = deepcopy(self.classifier.bottle_class)
+            self.classifier.set_classify_flag(False)      # stop classification task performing in RGB callback
 
             # Set type of bottle by changing the object name in planning scene and its color
             self.collisions.update_bottle_type(bottle_id, bottle_class)
@@ -376,85 +377,6 @@ class MissionPlanner:
         self.collisions.remove_collision_object()
 
         rospy.loginfo("Mission complete")
-
-    @staticmethod
-    def __create_marker(frame: str, type: int, pose: Pose, scale=[0.01, 0.01, 0.01], color=[0, 1, 0, 1]):
-        r"""
-        Create a marker for visualization
-
-        @param: frame The frame id of the marker
-        @param: type The type of the marker, 0: Arrow, 1: Cube, 2: Sphere, 3: Cylinder, 4: Line Strip, 5: Line List, 6: Cube List, 7: Sphere List, 8: Points, 9: Text
-        @param: pose The pose of the marker
-        @param: scale The scale of the marker
-        @param: color The color of the marker
-        @returns: Marker A marker instance
-
-        """
-        marker = Marker()
-
-        marker.header.frame_id = frame
-        marker.header.stamp = rospy.Time.now()
-
-        # set shape, Arrow: 0; Cube: 1 ; Sphere: 2 ; Cylinder: 3
-        marker.type = 2
-        marker.id = 0
-
-        # Set the pose of the marker
-        marker.pose = pose
-
-        # Set the scale of the marker
-        marker.scale.x = scale[0]
-        marker.scale.y = scale[1]
-        marker.scale.z = scale[2]
-
-        # Set the color
-        marker.color.r = color[0]
-        marker.color.g = color[1]
-        marker.color.b = color[2]
-        marker.color.a = color[3]
-
-        return marker
-
-    @staticmethod
-    def __get_TransformStamped_from_pose(pose: Pose, frame_id: str, child_frame_id: str) -> TransformStamped:
-        r"""
-        Convert a pose to a TransformStamped instance
-
-        @param: pose The pose to be converted
-        @param: frame_id The frame id of the pose
-        @param: child_frame_id The child frame id of the pose
-        @returns: TransformStamped A TransformStamped instance
-
-        """
-        ts = TransformStamped()
-        ts.header.stamp = rospy.Time.now()
-        ts.header.frame_id = frame_id
-        ts.child_frame_id = child_frame_id
-        ts.transform.translation.x = pose.position.x
-        ts.transform.translation.y = pose.position.y
-        ts.transform.translation.z = pose.position.z
-        ts.transform.rotation = pose.orientation
-
-        return ts
-
-    @staticmethod
-    def __get_PoseStamped_from_TransformStamped(ts: TransformStamped) -> PoseStamped:
-        r"""
-        Convert a TransformStamped to a PoseStamped instance
-
-        @param: ts The TransformStamped to be converted
-        @returns: PoseStamped A PoseStamped instance
-
-        """
-        ps = PoseStamped()
-        ps.header.stamp = ts.header.stamp
-        ps.header.frame_id = ts.header.frame_id
-        ps.pose.position.x = ts.transform.translation.x
-        ps.pose.position.y = ts.transform.translation.y
-        ps.pose.position.z = ts.transform.translation.z
-        ps.pose.orientation = ts.transform.rotation
-
-        return ps
 
 
 if __name__ == "__main__":

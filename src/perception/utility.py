@@ -2,7 +2,7 @@ from math import pi, tau, fabs
 
 # endeffector camera location
 TX = -0.0329
-TY = 0.0555
+TY = 0.0755
 TZ = -0.0632
 
 # Realsense camera intrinsics
