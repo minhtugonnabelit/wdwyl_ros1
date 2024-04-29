@@ -45,6 +45,8 @@ class RealSense:
 
         self.yaw = None
 
+        self.num_of_bottle = 0
+
     def get_crate_pos(self):
         return self.crate_pos
     
@@ -53,6 +55,9 @@ class RealSense:
     
     def get_yaw(self):
         return self.yaw
+    
+    def get_num_of_bottle(self):
+        return self.num_of_bottle
 
     # Projecting a 2D point to a 3D image plane:
     def project_2D_to_3D(self, u, v, depth):
@@ -95,9 +100,11 @@ class RealSense:
             results = self.model(self.rgb_image)[0]
 
             # Annotate the image
+            self.num_of_bottle = 0
             for result in results.boxes.data.tolist():
                 x1, y1, x2, y2, score, class_id = result
                 if score > self.threshold:
+                    self.num_of_bottle += 1
                     cv2.rectangle(self.rgb_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 4)
                     cv2.putText(self.rgb_image, results.names[int(class_id)].upper(), (int(x1), int(y1 - 10)),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)

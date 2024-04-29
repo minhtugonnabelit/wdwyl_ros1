@@ -39,6 +39,7 @@ class RealSense:
         # Define detection threshold
         self.threshold = 0.5
 
+
     @property
     def bottle_num(self):
         r"""
@@ -123,9 +124,11 @@ class RealSense:
             results = self.model(self.rgb_image)[0]
 
             # Annotate the image
+            self.bottle_num = 0
             for result in results.boxes.data.tolist():
                 x1, y1, x2, y2, score, class_id = result
                 if score > self.threshold:
+                    self.bottle_num += 1
                     cv2.rectangle(self.rgb_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 4)
                     cv2.putText(self.rgb_image, results.names[int(class_id)].upper(), (int(x1), int(y1 - 10)),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
