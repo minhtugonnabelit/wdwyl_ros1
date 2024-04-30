@@ -20,8 +20,8 @@ MAX_ACC_SCALE_FACTOR = 0.4
 INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  #rad
 LOCALIZE_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
 CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
-GRIPPER_OPEN = 1000     #0.1mm
-GRIPPER_CLOSE = 600     #0.1mm
+GRIPPER_OPEN = 500     #0.1mm
+GRIPPER_CLOSE = 200     #0.1mm
 
 @dataclass
 class Bottle:
@@ -77,7 +77,7 @@ def list_to_pose(pose: list):
 
     return p
     
-def get_PoseStamped_from_TransformStamped(ts: TransformStamped) -> PoseStamped:
+def transformstamped_to_posestamped(ts: TransformStamped) -> PoseStamped:
     r"""
     Convert a TransformStamped to a PoseStamped instance
 
@@ -95,7 +95,23 @@ def get_PoseStamped_from_TransformStamped(ts: TransformStamped) -> PoseStamped:
 
     return ps
 
-def get_TransformStamped_from_pose(pose: Pose, frame_id: str, child_frame_id: str) -> TransformStamped:
+def transformstamped_to_pose(ts: TransformStamped) -> Pose:
+    r"""
+    Convert a TransformStamped to a Pose instance
+
+    @param: ts The TransformStamped to be converted
+    @returns: Pose A Pose instance
+
+    """
+    p = Pose()
+    p.position.x = ts.transform.translation.x
+    p.position.y = ts.transform.translation.y
+    p.position.z = ts.transform.translation.z
+    p.orientation = ts.transform.rotation
+
+    return p
+
+def pose_to_transformstamped(pose: Pose, frame_id: str, child_frame_id: str) -> TransformStamped:
     r"""
     Convert a pose to a TransformStamped instance
 
