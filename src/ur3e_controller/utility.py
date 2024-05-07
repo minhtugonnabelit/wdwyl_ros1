@@ -1,7 +1,8 @@
 #! /usr/bin/env python3
 from dataclasses import dataclass
 
-import rospy, tf
+import rospy
+import tf
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 from visualization_msgs.msg import Marker
 from moveit_commander.conversions import pose_to_list
@@ -10,27 +11,37 @@ from moveit_commander import PlannerInterfaceDescription, MoveGroupCommander, Pl
 from math import pi, tau, dist, fabs, cos
 
 import tf.transformations
+from spatialmath import SE3
 
 # Constants variables
-CONTROL_RATE = 10 #Hz
-POS_TOL = 0.01  #m
-ORI_TOL = 0.01  #m
-MAX_VEL_SCALE_FACTOR = 0.4
-MAX_ACC_SCALE_FACTOR = 0.4
-INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  #rad
-LOCALIZE_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
-CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))    #m
-GRIPPER_OPEN = 500     #0.1mm
-GRIPPER_CLOSE = 200     #0.1mm
+CONTROL_RATE = 10  # Hz
+POS_TOL = 0.01  # m
+ORI_TOL = 0.01  # m
+MAX_VEL_SCALE_FACTOR = 0.1
+MAX_ACC_SCALE_FACTOR = 0.1
+INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  # rad
+LOCALIZE_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))  # m
+CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))  # m
+GRIPPER_OPEN = 500  # 0.1mm
+GRIPPER_CLOSE = 200  # 0.1mm
+
+# predefined configurations as reference guess for IK solver
+PREDEFINED_CONFIGS = {
+    'BACK':  [pi/2, -2, 0,  -1.19, -pi/2, 0.38],
+    "FRONT": [-pi/2, -pi/2, 0, -1.19, -pi/2, 0.38],
+    "LEFT":  [pi, -pi/2, 0,  -1.19, -pi/2, 0.38],
+    "RIGHT": [0, -pi/2, 0, -1.19, -pi/2, 0.38],
+}
+
 
 @dataclass
 class Bottle:
     r"""
     A class to represent a bottle object.
     """
-    id : str
-    type : str
-    pose : Pose
+    id: str
+    type: str
+    pose: Pose
 
 
 def all_close(goal, actual, tolerance):
@@ -62,21 +73,24 @@ def all_close(goal, actual, tolerance):
 
     return True
 
-def list_to_pose(pose: list):
+
+def list_to_pose(pose: list) -> Pose:
 
     p = Pose()
     p.position.x = pose[0]
     p.position.y = pose[1]
     p.position.z = pose[2]
 
-    ori_in_quat = tf.transformations.quaternion_from_euler(pose[3], pose[4], pose[5], axes='sxyz')
+    ori_in_quat = tf.transformations.quaternion_from_euler(
+        pose[3], pose[4], pose[5], axes='sxyz')
     p.orientation.x = ori_in_quat[0]
     p.orientation.y = ori_in_quat[1]
     p.orientation.z = ori_in_quat[2]
     p.orientation.w = ori_in_quat[3]
 
     return p
-    
+
+
 def transformstamped_to_posestamped(ts: TransformStamped) -> PoseStamped:
     r"""
     Convert a TransformStamped to a PoseStamped instance
@@ -95,6 +109,7 @@ def transformstamped_to_posestamped(ts: TransformStamped) -> PoseStamped:
 
     return ps
 
+
 def transformstamped_to_pose(ts: TransformStamped) -> Pose:
     r"""
     Convert a TransformStamped to a Pose instance
@@ -111,7 +126,8 @@ def transformstamped_to_pose(ts: TransformStamped) -> Pose:
 
     return p
 
-def pose_to_transformstamped(pose: Pose, frame_id: str, child_frame_id: str) -> TransformStamped:
+
+def pose_to_transformstamped(pose: Pose, child_frame_id: str, parent_frame_id: str) -> TransformStamped:
     r"""
     Convert a pose to a TransformStamped instance
 
@@ -123,7 +139,7 @@ def pose_to_transformstamped(pose: Pose, frame_id: str, child_frame_id: str) -> 
     """
     ts = TransformStamped()
     ts.header.stamp = rospy.Time.now()
-    ts.header.frame_id = frame_id
+    ts.header.frame_id = parent_frame_id
     ts.child_frame_id = child_frame_id
     ts.transform.translation.x = pose.position.x
     ts.transform.translation.y = pose.position.y
@@ -132,7 +148,8 @@ def pose_to_transformstamped(pose: Pose, frame_id: str, child_frame_id: str) -> 
 
     return ts
 
-def create_marker(frame: str, type: int, pose: Pose, scale=[0.01, 0.01, 0.01], color=[0, 1, 0, 1]):
+
+def create_marker(frame: str, type: int, pose: Pose, scale=[0.01, 0.01, 0.01], color=[0, 1, 0, 1]) -> Marker:
     r"""
     Create a marker for visualization
 
@@ -169,7 +186,8 @@ def create_marker(frame: str, type: int, pose: Pose, scale=[0.01, 0.01, 0.01], c
 
     return marker
 
-def list_to_PoseStamped(pose : list, frame_id : str = "base_link_inertia"):
+
+def list_to_PoseStamped(pose: list, frame_id: str = "base_link_inertia") -> PoseStamped:
 
     ps = PoseStamped()
     ps.header.frame_id = frame_id
@@ -177,10 +195,21 @@ def list_to_PoseStamped(pose : list, frame_id : str = "base_link_inertia"):
     ps.pose.position.y = pose[1]
     ps.pose.position.z = pose[2]
 
-    ori_in_quat = tf.transformations.quaternion_from_euler(pose[3], pose[4], pose[5], axes='sxyz')
+    ori_in_quat = tf.transformations.quaternion_from_euler(
+        pose[3], pose[4], pose[5], axes='sxyz')
     ps.pose.orientation.x = ori_in_quat[0]
     ps.pose.orientation.y = ori_in_quat[1]
     ps.pose.orientation.z = ori_in_quat[2]
     ps.pose.orientation.w = ori_in_quat[3]
 
     return ps
+
+
+def pose_to_SE3(p: Pose) -> SE3:
+
+    pose_in_homogenous = tf.TransformerROS.fromTranslationRotation(tf.TransformerROS,
+                                                                   translation=(p.position.x, p.position.y, p.position.z), 
+                                                                   rotation=(p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w))
+    
+    return SE3(pose_in_homogenous)
+
