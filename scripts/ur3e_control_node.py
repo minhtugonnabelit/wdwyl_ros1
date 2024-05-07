@@ -22,16 +22,34 @@ from copy import deepcopy
 # @TODO: Implementing loading scene with object detected
 # @TODO: initializing a static tf from camera to toolpose via static broadcaster
 
+HEIGHT_TO_DETECT_BOTTLE = 0.28
+ENDPOINT_OFFSET = 0.2
 
-TARGET_CRATE_POSE = list_to_pose([0.033 + TX,
-                                 -0.090 + TY*1.3,
-                                 0.5052 - 0.28,
-                                 0, 0, np.deg2rad(1.31)])
+TARGET_CRATE_POSE = list_to_pose([0.0376 + TX,
+                                 -0.1069 + TY,
+                                 0.5632 - HEIGHT_TO_DETECT_BOTTLE,
+                                 0, 0, np.deg2rad(0.387)])
 
-TARGET_BOTTLE_POSE = list_to_pose([-0.025,
-                                   -0.116,
-                                   0.525 - 0.28,
-                                   0, 0, np.deg2rad(0)])
+TARGET_BOTTLE_POSE = list_to_pose([0.0923,
+                                   -0.100,
+                                   ENDPOINT_OFFSET + 0.1,
+                                   0, 0, 0])
+
+CAM_OFFSET = list_to_pose([TX,
+                           TY,
+                           ENDPOINT_OFFSET,
+                           0, 0, 0])
+
+M = list_to_pose([0.0617,
+                  -0.0995,
+                  ENDPOINT_OFFSET,
+                  0, 0, 0])
+
+Z = 0.5132
+
+INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  # rad
+LOCALIZE_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))  # m
+CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))  # m
 
 
 AVAILABLE_MESHES = ["coke", "pepsi", "sprite", "fanta"]
@@ -65,10 +83,13 @@ class MissionPlanner:
         self.rs = RealSense(on_UR=True)
         self.classifier = Classifier()
 
+        # Setup the scene with ur3e controller and homing
         self.setup_scene()
-        self.ur3e.move_to_hang()
-        self.ur3e.open_gripper_to(width=1100, force=400)
+        self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
+        # Fully open the gripper to get a better view
+        # self.ur3e.open_gripper_to(width=1100, force=400)
 
+        # TF2 listener and broadcaster to deal with the transformation
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
@@ -93,63 +114,59 @@ class MissionPlanner:
 
             if not done:
 
-                self.ur3e.go_to_pose(pose = TARGET_CRATE_POSE,
-                                     child_frame_id="crate_center",
-                                     frame_id="tool0")
+                # Fully open the gripper to 1100 0.1mm wide to maximise camera view
+                # self.ur3e.open_gripper_to(width=1100, force=400)
 
-                # # Move to crate
-                # self.ur3e.set_transform_target(pose=TARGET_CRATE_POSE,
-                #                                child_frame_id="crate_center",
-                #                                frame_id="tool0")
+                # # Initiating the crate detection
+                # # Crate pose relative to the camera, @TODO: UPDATE FUNCTION TO GET CRATE POSE
+                crate_pose_raw = list_to_pose([0.1735,
+                                               -0.2033,
+                                               0.4922-0.1,
+                                               0, 0, np.deg2rad(0)])
 
-                # self.set_transform_target(pose=TARGET_CRATE_POSE,
-                #                           child_frame_id="crate_center",
-                #                           frame_id="tool0")
-
-                # try:
-                #     tf_received = self.tf_buffer.lookup_transform(
-                #         "base_link_inertia", "crate_center", rospy.Time(0), rospy.Duration(1.0))
-                # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-                #     self.rate.sleep()
-                #     continue
-
-                # pose = transformstamped_to_pose(
-                #     tf_received)
-
-                # self.visualize_target_pose(pose)
-
-                # self.ur3e.go_to_pose_goal(pose)
+                # self.ur3e.go_to_pose_goal(
+                #     pose=crate_pose_raw, child_frame_id="crate_center", parent_frame_id="tool0")
                 # rospy.sleep(2)
 
-                self.ur3e.go_to_pose(pose = TARGET_BOTTLE_POSE,
-                                     child_frame_id="bottle",
-                                     frame_id="tool0")
-                                
+                # # ahfouiahosdhdsasjdpoasijdpoa
+                # bottle_pose = list_to_pose([TX,
+                #                             TY,
+                #                             ENDPOINT_OFFSET,
+                #                             0, 0, np.deg2rad(0)])
 
-                # # Move to above bottle location and pick
-                # self.set_transform_target(pose=TARGET_BOTTLE_POSE,
-                #                           child_frame_id="bottle",
-                #                           frame_id="tool0")
-
-                # try:
-                #     tf_received = self.tf_buffer.lookup_transform(
-                #         "base_link_inertia", "bottle", rospy.Time(0), rospy.Duration(1.0))
-                # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-                #     self.rate.sleep()
-                #     continue
-
-                # pose = transformstamped_to_pose(
-                #     tf_received)
-
-                # self.visualize_target_pose(pose)
-                # self.ur3e.go_to_pose_goal(pose)
+                # self.ur3e.go_to_pose_goal(
+                #     pose=bottle_pose, child_frame_id="bottle", parent_frame_id="tool0")
                 # rospy.sleep(2)
 
-                # target_pose = self.ur3e.get_current_pose()
-                # target_pose.position.z -= 0.3
-                # self.visualize_target_pose(pose.pose)
-                # self.ur3e.go_to_pose_goal(target_pose)
+                # # asdbnEFUFSHOIUHSdoSDFH
+                # bottle_pose_lower = list_to_pose([0.0537,
+                #                                   -0.0599,
+                #                                   0.4902-0.1,
+                #                                   0, 0, np.deg2rad(0)])
+
+                # self.ur3e.go_to_pose_goal(
+                #     pose=bottle_pose_lower, child_frame_id="bottle", parent_frame_id="tool0")
                 # rospy.sleep(2)
+
+                joint_goal = self.ur3e.ikine_opt(
+                    PREDEFINED_CONFIGS['BACK'], PREDEFINED_CONFIGS['BACK'], pose_to_SE3(crate_pose_raw))
+                print(joint_goal)
+[     1.5708,     -4.0165,      1.8661,   -0.024354,     -3.1416,     0.96692]
+
+                # # Drag end effector to the bottle center and decent 0.1 m
+                # pose = self.ur3e.get_transform_in_planning_frame(pose=TARGET_BOTTLE_POSE,
+                #                                                  child_frame_id="bottle",
+                #                                                  parent_frame_id="tool0")
+                # plan, frac = self.ur3e.gen_carternian_path(pose)
+                # self.ur3e.execute_plan(plan)
+                # rospy.sleep(2)
+
+                # # Close the gripper to 500 0.1mm wide to fit in the tiny gripping state
+                # self.ur3e.open_gripper_to(width=500, force=400)
+
+                # # # Totally decent the end effector to the bottle
+                # _ = self.ur3e.move_ee_along_axis(
+                #     axis="z", delta=-0.2)
 
                 done = True
 
@@ -184,31 +201,37 @@ class MissionPlanner:
                     self.crate_pose[3]]      # yaw
             )
 
-            # Start broadcasting the crate center
-            self.set_transform_target(pose=pose,
-                                      child_frame_id="crate_center",
-                                      frame_id="tool0")
+            # Go to just above crate centers
+            self.ur3e.go_to_pose(pose=pose,
+                                 child_frame_id="crate_center",
+                                 parent_frame_id="tool0")
 
-            # Move to crate center in plane xy
-            try:
-                tf_received = self.tf_buffer.lookup_transform(
-                    "base_link_inertia", "crate_center", rospy.Time(0), rospy.Duration(1.0))
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-                self.rate.sleep()
-                continue            # If the transform is not received, wait for the next loop
-# TARGET_BOTTLE_PICK_POSE = list_to_pose([0.0246,
-#                                         -0.0532,
-#                                         0.525 - 0.28,
-#                                         0, 0, np.deg2rad(-8.2)])
             # Add mesh of the crate into planning scene for collision avoidance
             self.collisions.add_collision_object(
                 obj_id="crate", pose=self.crate_pose, object_type="crate", frame_id="base_link_inertia")
 
-            # Visualize the target pose
-            self.visualize_target_pose(self.crate_pose.pose)
+            # # Start broadcasting the crate center
+            # self.set_transform_target(pose=pose,
+            #                           child_frame_id="crate_center",
+            #                           frame_id="tool0")
 
-            # Command the robot to move to the target pose.  State reset at pose right on top of the crate center. The system have to ensure that the crate is not moved during the process
-            self.ur3e.go_to_pose_goal(self.crate_pose)
+            # # Move to crate center in plane xy
+            # try:
+            #     tf_received = self.tf_buffer.lookup_transform(
+            #         "base_link_inertia", "crate_center", rospy.Time(0), rospy.Duration(1.0))
+            # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            #     self.rate.sleep()
+            #     continue            # If the transform is not received, wait for the next loop
+
+            # # Add mesh of the crate into planning scene for collision avoidance
+            # self.collisions.add_collision_object(
+            #     obj_id="crate", pose=self.crate_pose, object_type="crate", frame_id="base_link_inertia")
+
+            # # Visualize the target pose
+            # self.visualize_target_pose(self.crate_pose.pose)
+
+            # # Command the robot to move to the target pose.  State reset at pose right on top of the crate center. The system have to ensure that the crate is not moved during the process
+            # self.ur3e.go_to_pose_goal(self.crate_pose)
             rospy.sleep(1)
 
             ## =========================================================================== ##
@@ -237,6 +260,15 @@ class MissionPlanner:
                  bottle_pose_raw[3]]
             )
 
+            # Go to just above the bottle
+            self.ur3e.go_to_pose(pose=pose,
+                                 child_frame_id="bottle",
+                                 frame_id="tool0")
+
+            # Add mesh of the bottle into planning scene for collision avoidance
+            self.collisions.add_collision_object(
+                obj_id="bottle", pose=bottle_pose_raw, object_type="bottle", frame_id="base_link_inertia")
+
             # Start broadcasting the bottle center
             self.set_transform_target(pose=pose,
                                       child_frame_id="bottle_center",
@@ -252,7 +284,7 @@ class MissionPlanner:
                 self.rate.sleep()
                 continue
 
-            bottle_pose_stamped = get_PoseStamped_from_TransformStamped(
+            bottle_pose_stamped = transformstamped_to_posestamped(
                 tf_received)
 
             self.visualize_target_pose(bottle_pose_stamped.pose)
@@ -335,45 +367,21 @@ class MissionPlanner:
 
             rospy.sleep(1)
 
-    def set_transform_target(self, pose: Pose, child_frame_id: str, frame_id: str = "base_link_inertia",):
-
-        transform_target = get_TransformStamped_from_pose(pose=pose,
-                                                          frame_id=frame_id,
-                                                          child_frame_id=child_frame_id)
-
-        self.tf_broadcaster.sendTransform(transform_target)
-
-        rospy.sleep(0.01)
-
-    def visualize_target_pose(self, pose: Pose, type: int = 2, frame_id: str = "base_link_inertia"):
-        r"""
-        Visualize the target pose in rviz
-        @param: pose The pose to be visualized
-        @param: frame_id The frame id of the pose, default is base_link_inertia"
-        """
-
-        target_marker = create_marker(
-            frame_id, type, pose)
-        self.marker_pub.publish(target_marker)
-
     def cleanup(self):
 
         rospy.loginfo("Cleaning up")
 
         self.FINISHED = True
 
-        self.ur3e.move_to_hang()
-        rospy.sleep(1)
-
+        self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
         self.ur3e.shutdown()
 
         # remove all collision objects
         self.collisions.remove_collision_object()
 
-        rospy.loginfo("Mission complete")
+        rospy.loginfo("Clean-up completed")
 
 
 if __name__ == "__main__":
     mp = MissionPlanner()
-    # mp.system_loop()
     mp.box_pick()
