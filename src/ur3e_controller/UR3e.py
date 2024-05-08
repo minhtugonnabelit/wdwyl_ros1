@@ -7,7 +7,7 @@ import tf2_ros
 import rospy
 import moveit_commander
 from moveit_commander import RobotCommander, PlanningSceneInterface, MoveGroupCommander
-from moveit_msgs.msg import RobotTrajectory, DisplayTrajectory
+from moveit_msgs.msg import RobotTrajectory, DisplayTrajectory, Constraints, JointConstraint
 
 from sensor_msgs.msg import JointState
 
@@ -17,9 +17,27 @@ from ur3e_controller.gripper import Gripper
 from ur3e_controller.collision_manager import CollisionManager
 from scipy.spatial.transform import Rotation as R
 
+import spatialmath.base as smb
 from spatialmath import SE3
 from scipy.optimize import minimize
 import numpy as np
+
+
+# Constants variables
+POS_TOL = 0.01  # m
+ORI_TOL = 0.01  # m
+MAX_VEL_SCALE_FACTOR = 0.05
+MAX_ACC_SCALE_FACTOR = 0.05
+GRIPPER_OPEN = 500  # 0.1mm
+GRIPPER_CLOSE = 200  # 0.1mm
+
+# predefined configurations as reference guess for IK solver
+PREDEFINED_CONFIGS = {
+    'BACK':  [pi/2, -pi/2, -pi/2,  -pi/2, pi/2, 0.38],
+    "FRONT": [-pi/2, -pi/2, 0, -1.19, -pi/2, 0.38],
+    "LEFT":  [pi, -pi/2, 0,  -1.19, -pi/2, 0.38],
+    "RIGHT": [0, -pi/2, 0, -1.19, -pi/2, 0.38],
+}
 
 
 class UR3e:
@@ -31,7 +49,6 @@ class UR3e:
     DETECT_CONFIG = 'detect_config'
     HOME_BACK_SIDE = "home_back_side"
     HOME = "home_back_side"
-
 
     def __init__(self) -> None:
 
@@ -53,7 +70,7 @@ class UR3e:
 
         self._marker_pub = rospy.Publisher(
             "visualization_marker", Marker, queue_size=10)
-        
+
         self._joint_states_sub = rospy.Subscriber(
             "/joint_states", JointState, self._joint_states_callback)
 
@@ -62,7 +79,6 @@ class UR3e:
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
 
         setup_completed = self.movegroup_setup()
-
 
         rospy.logdebug(f"============ Planning frame: {self._planning_frame}")
         rospy.logdebug(f"============ End effector link: {self._eef_link}")
@@ -80,30 +96,83 @@ class UR3e:
         self._group.set_goal_orientation_tolerance(ORI_TOL)
         self._group.set_max_velocity_scaling_factor(MAX_VEL_SCALE_FACTOR)
         self._group.set_max_acceleration_scaling_factor(MAX_ACC_SCALE_FACTOR)
-
+        self.init_path_constraints()
 
         # Add a small fragment piece as gripper cable node
         cable_cap_pose = PoseStamped()
         cable_cap_pose.pose = list_to_pose(
             [-0.045, -0.01, 0.01, 1.57, 0, 1.57])
         cable_cap_pose.header.frame_id = "tool0"
+        self._scene.add_cylinder("cable_cap", cable_cap_pose, 0.02, 0.01)
+        self._scene.attach_mesh("tool0", "cable_cap", touch_links=[
+            "onrobot_rg2_base_link", "wrists_3_link"])
 
-        # camera_mount_pose = PoseStamped()
-        # cable_cap_pose.pose = list_to_pose(
-        #     [-0.045, -0.01, 0.01, 1.57, 0, 1.57])
-        # camera_mount_pose.header.frame_id = "tool0"
-        # self._scene.add_box("camera_mount", camera_mount_pose,
-        #                     size=(0.08, 0.1, 0.035))
-        # self._scene.attach_mesh("tool0", "camera_mount", touch_links=[
-        #     "onrobot_rg2_base_link"])
+        # Add box to wrap around the camera mounter
+        camera_mount_pose = PoseStamped()
+        camera_mount_pose.pose = list_to_pose(
+            [0.0, -0.0455, 0.0732, 0.0, 0.0, 0.0])
+        camera_mount_pose.header.frame_id = "tool0"
+        self._scene.add_box("camera_mount", camera_mount_pose,
+                            size=(0.08, 0.1, 0.035))
+        self._scene.attach_mesh("tool0", "camera_mount", touch_links=[
+            "onrobot_rg2_base_link"])
 
         return True
-    def get_transform_in_base_link(self, pose_in_tool0 : Pose):
-        r"""
-        """
 
-        pose_in_base = self.virtual_UR.fkine(self.virtual_UR.q,tool=self.virtual_UR_tool) @ pose_to_SE3(pose_in_tool0)
-        return pose_in_base    
+    def init_path_constraints(self):
+
+        constraints = Constraints()
+        constraints.name = "elbow_up"
+
+        joint_constraint = JointConstraint()
+        joint_constraint.joint_name = "elbow_joint" 
+        joint_constraint.position = -2.3562/2
+        joint_constraint.tolerance_above = 2.3562/2
+        joint_constraint.tolerance_below = 2.3562/2
+        joint_constraint.weight = 1
+        constraints.joint_constraints.append(joint_constraint)
+
+        joint_constraint_01 = JointConstraint()
+        joint_constraint_01.joint_name = "wrist_1_joint" 
+        joint_constraint_01.position = -pi/2
+        joint_constraint_01.tolerance_above = pi/2
+        joint_constraint_01.tolerance_below = pi/2
+        joint_constraint_01.weight = 1
+        constraints.joint_constraints.append(joint_constraint_01)
+
+        joint_constraint_02 = JointConstraint()
+        joint_constraint_02.joint_name = "shoulder_lift_joint" 
+        joint_constraint_02.position = -2.443
+        joint_constraint_02.tolerance_above = 1.746
+        joint_constraint_02.tolerance_below = 1.746
+        joint_constraint_02.weight = 1  
+        constraints.joint_constraints.append(joint_constraint_02)
+
+        joint_constraint_03 = JointConstraint() 
+        joint_constraint_03.joint_name = "wrist_2_joint" 
+        joint_constraint_03.position = pi/2
+        joint_constraint_03.tolerance_above = 0.5
+        joint_constraint_03.tolerance_below = 0.5
+        joint_constraint_03.weight = 1  
+        constraints.joint_constraints.append(joint_constraint_03)
+
+        joint_constraint_04 = JointConstraint() 
+        joint_constraint_04.joint_name = "shoulder_pan_joint" 
+        joint_constraint_04.position = 2.0944
+        joint_constraint_04.tolerance_above = 1.48353
+        joint_constraint_04.tolerance_below = 1.48353
+        joint_constraint_04.weight = 1  
+        constraints.joint_constraints.append(joint_constraint_04)
+
+        # joint_constraint_05 = JointConstraint() 
+        # joint_constraint_05.joint_name = "wrist_3_joint" 
+        # joint_constraint_05.position = 0.5
+        # joint_constraint_05.tolerance_above = 2
+        # joint_constraint_05.tolerance_below = 2
+        # joint_constraint_05.weight = 0.5 
+        # constraints.joint_constraints.append(joint_constraint_05)
+
+        self._group.set_path_constraints(constraints)
 
 
     def shutdown(self):
@@ -166,29 +235,6 @@ class UR3e:
         cur_pose = self._group.get_current_pose().pose
         return all_close(pose, cur_pose, 0.001)
 
-    def go_to_pose_goal_with_custom_ik(self, pose: Pose, child_frame_id, parent_frame_id, wait=True):
-        r"""
-        #### Move the robot to the specified pose using custom IK solver that ensure desired joint configuration.
-        
-        Instead of letting MoveIt to compute the IK solution, we use an optimization based Ik solver
-        for having the IK solution that optmize the difference between desired config eg. same elbow and shoulder side.
-        Then we use the found IK solution as the goal joint configuration for MoveIt to plan the trajectory.
-
-        @param: pose A Pose instance
-        @param: q_guess A list of floats, the guess joint configuration for the custom IK solver
-
-        @returns: bool True if successful by comparing the goal and actual poses
-        """
-        done = True
-
-        # Get transform of end effector toward robot base link 
-        pose = self.get_transform_in_planning_frame( pose, child_frame_id, parent_frame_id, lookup_frame_id="base_link_inertia", to_SE3=True)
-        joint_goal = self.find_joint_state(self._cur_js, self._cur_js, pose)
-
-
-
-        return done
-
     def gen_carternian_path(self, target_pose: Pose, max_step=0.001, jump_thresh=0.0):
         r"""
         Generate a cartesian path as a straight line to a desired pose .
@@ -202,20 +248,22 @@ class UR3e:
 
         # generate a straight line path using a scaling 0 to 1 applied to the target pose differ to current pose
         waypoints = []
+        waypoints.append(current_pose)
+        waypoints.append(target_pose)
 
-        for i in range(1, 11):
-            scale = i / 10.0
+        # for i in range(1, 6):
+        #     scale = i / 5
 
-            pt = Pose()
-            pt.position.x = current_pose.position.x + scale * \
-                (target_pose.position.x - current_pose.position.x)
-            pt.position.y = current_pose.position.y + scale * \
-                (target_pose.position.y - current_pose.position.y)
-            pt.position.z = current_pose.position.z + scale * \
-                (target_pose.position.z - current_pose.position.z)
-            pt.orientation = target_pose.orientation
+        #     pt = Pose()
+        #     pt.position.x = current_pose.position.x + scale * \
+        #         (target_pose.position.x - current_pose.position.x)
+        #     pt.position.y = current_pose.position.y + scale * \
+        #         (target_pose.position.y - current_pose.position.y)
+        #     pt.position.z = current_pose.position.z + scale * \
+        #         (target_pose.position.z - current_pose.position.z)
+        #     pt.orientation = target_pose.orientation
 
-            waypoints.append(pt)
+        #     waypoints.append(pt)
 
         # Blocking loop to ensure the cartesian path is fully planned
         while fraction < 1.0:
@@ -252,6 +300,7 @@ class UR3e:
         self._group.set_named_target(name)
         self._group.go(wait=True)
         
+        self._group.plan()
         joint_goal = self._group.get_named_target_values(name)
         cur_joint = self._group.get_current_joint_values()
         return all_close(joint_goal, cur_joint, 0.001)
@@ -388,14 +437,21 @@ class UR3e:
 
     def ikine_opt(self, initial_guess, desired_config, desired_pose : SE3) -> list:
 
+        print(desired_pose)
+
         """Find the joint state that minimizes the difference from the desired config and satisfies the forward kinematics constraint."""
         def objective_function(x, desired_config):
             """Objective function to minimize. This should return the difference between the current joint state and the desired joint state."""
             return np.linalg.norm(x - desired_config)
+            
 
         def constraint_function(x, desired_pose):
+
+            base_rot = np.eye(4)
+            base_rot[0:3,0:3] = smb.rotz(np.pi)
+
             """Constraint function for the optimization. This should return 0 when the forward kinematics of the current joint state match the desired pose."""
-            current_pose = self.virtual_UR.fkine(x,tool=self.virtual_UR_tool).A
+            current_pose = base_rot @ self.virtual_UR.fkine(x,tool=self.virtual_UR_tool).A
             pos_error = np.linalg.norm(current_pose[0:3,3] - desired_pose.A[0:3,3])
             ori_error = R.from_matrix(np.linalg.inv(current_pose[0:3,0:3]) @ desired_pose.A[0:3,0:3]).magnitude()
             return pos_error + ori_error
@@ -408,6 +464,6 @@ class UR3e:
 
         # Return the optimized joint state
         return result.x
-    
+
 
     

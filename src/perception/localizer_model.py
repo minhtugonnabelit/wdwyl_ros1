@@ -1,4 +1,4 @@
-import rospy
+import rospy, rospkg
 import cv2
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -25,7 +25,8 @@ class RealSense:
         self.closest_depth = None
         self.last_closest_depth = None
 
-        self.model_path = '/home/anh/workspace/test_image_contour/src/detect/detect/train/weights/best.pt'
+        self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/config/detect/detect/train/weights/best.pt'
+        
 
         # Load the YOLO model
         self.model = YOLO(self.model_path)
@@ -63,12 +64,12 @@ class RealSense:
         @param: flag A boolean value"""
 
         self.get_crate = flag
-        if not flag:
-            self.crate_pos = None
-        else:
-            if wait:
-                while self.crate_pos is None:
-                    pass
+        # if not flag:
+        #     self.crate_pos = None
+        # else:
+        #     if wait:
+        #         while self.crate_pos is None:
+        #             pass
 
         return self.get_crate
         
@@ -78,12 +79,12 @@ class RealSense:
         @param: flag A boolean value"""
 
         self.get_bottle = flag
-        if not flag:
-            self.bottle_pos = None
-        else:
-            if wait:
-                while self.bottle_pos is None:
-                    pass
+        # if not flag:
+        #     self.bottle_pos = None
+        # else:
+        #     if wait:
+        #         while self.bottle_pos is None:
+        #             pass
 
         return self.get_bottle
 

@@ -13,26 +13,6 @@ from math import pi, tau, dist, fabs, cos
 import tf.transformations
 from spatialmath import SE3
 
-# Constants variables
-CONTROL_RATE = 10  # Hz
-POS_TOL = 0.01  # m
-ORI_TOL = 0.01  # m
-MAX_VEL_SCALE_FACTOR = 0.1
-MAX_ACC_SCALE_FACTOR = 0.1
-INITIAL_CONFIG = [0, -pi/2, pi/2, 0, 0, 0]  # rad
-LOCALIZE_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))  # m
-CLASSIFY_POSE = Pose(position=(0.5, 0.5, 0.5), orientation=(0, 0, 0, 1))  # m
-GRIPPER_OPEN = 500  # 0.1mm
-GRIPPER_CLOSE = 200  # 0.1mm
-
-# predefined configurations as reference guess for IK solver
-PREDEFINED_CONFIGS = {
-    'BACK':  [pi/2, -2, 0,  -1.19, -pi/2, 0.38],
-    "FRONT": [-pi/2, -pi/2, 0, -1.19, -pi/2, 0.38],
-    "LEFT":  [pi, -pi/2, 0,  -1.19, -pi/2, 0.38],
-    "RIGHT": [0, -pi/2, 0, -1.19, -pi/2, 0.38],
-}
-
 
 @dataclass
 class Bottle:
@@ -208,8 +188,14 @@ def list_to_PoseStamped(pose: list, frame_id: str = "base_link_inertia") -> Pose
 def pose_to_SE3(p: Pose) -> SE3:
 
     pose_in_homogenous = tf.TransformerROS.fromTranslationRotation(tf.TransformerROS,
-                                                                   translation=(p.position.x, p.position.y, p.position.z), 
-                                                                   rotation=(p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w))
-    
-    return SE3(pose_in_homogenous)
+                                                                   translation=(
+                                                                       p.position.x,
+                                                                       p.position.y,
+                                                                       p.position.z),
+                                                                   rotation=(
+                                                                       p.orientation.x,
+                                                                       p.orientation.y,
+                                                                       p.orientation.z,
+                                                                       p.orientation.w))
 
+    return SE3(pose_in_homogenous)
