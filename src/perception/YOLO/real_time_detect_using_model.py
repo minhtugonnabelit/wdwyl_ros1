@@ -5,6 +5,8 @@ from cv_bridge import CvBridge
 from ultralytics import YOLO
 import numpy as np
 import pyrealsense2 as rs
+import copy
+import math
 
 class RealSense:
 
@@ -21,6 +23,7 @@ class RealSense:
         self.depth_scale = 0.001  # Example value, replace with actual scale
 
         self.closest_depth = None
+        self.last_closest_depth = None
 
         self.model_path = '/home/anh/workspace/test_image_contour/src/detect/detect/train/weights/best.pt'
 
@@ -32,7 +35,7 @@ class RealSense:
 
         self.depth_intrinsics = rs.intrinsics()
         self.depth_intrinsics.width = 640  # Assuming width of the depth sensor
-        self.depth_intrinsics.height = 640  # Assuming height of the depth sensor
+        self.depth_intrinsics.height = 480  # Assuming height of the depth sensor
         self.depth_intrinsics.ppx = 324.8121337890625  # Principal point x (cx)
         self.depth_intrinsics.ppy = 230.55308532714844  # Principal point y (cy)
         self.depth_intrinsics.fx = 612.493408203125  # Focal length x
@@ -46,6 +49,13 @@ class RealSense:
         self.yaw = None
 
         self.num_of_bottle = 0
+        
+        self.x1 = None
+        self.x2 = None
+        self.y1 = None
+        self.y2 = None
+
+        self.circle_detected = False
 
     def get_crate_pos(self):
         return self.crate_pos
@@ -58,6 +68,9 @@ class RealSense:
     
     def get_num_of_bottle(self):
         return self.num_of_bottle
+    
+    def get_circle_flag(self):
+        return self.circle_detected
 
     # Projecting a 2D point to a 3D image plane:
     def project_2D_to_3D(self, u, v, depth):
@@ -88,34 +101,72 @@ class RealSense:
     def rgb_callback(self, data):
         # Convert the ROS Image message to a cv2 image
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        
-        tung_x = None
-        tung_y = None
 
         if (self.get_crate == True and self.get_bottle == False):
             self.img_processing()
         
         elif (self.get_crate == False and self.get_bottle == True):
+
             # # Run YOLO model on the frame
             results = self.model(self.rgb_image)[0]
 
-            # Annotate the image
-            self.num_of_bottle = 0
             for result in results.boxes.data.tolist():
                 x1, y1, x2, y2, score, class_id = result
                 if score > self.threshold:
                     self.num_of_bottle += 1
+            # print(self.num_of_bottle)
+
+            center_x_bottle = 0
+            center_y_bottle = 0
+
+            nearest_x_bottle = 0
+            nearest_y_bottle = 0
+            # Annotate the image
+            self.num_of_bottle = 0
+            min_dis = 1000
+            for result in results.boxes.data.tolist():
+                x1, y1, x2, y2, score, class_id = result
+                if score > self.threshold:
                     cv2.rectangle(self.rgb_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 4)
-                    cv2.putText(self.rgb_image, results.names[int(class_id)].upper(), (int(x1), int(y1 - 10)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
                     
                     # ///////////////////////////////////////////////
                     # Calculate the center of the bounding box
                     center_x_bottle = int((x1 + x2) / 2)
                     center_y_bottle = int((y1 + y2) / 2)
-                    tung_x = center_x_bottle
-                    tung_y = center_y_bottle
-                    cv2.circle(self.rgb_image, (center_x_bottle, center_y_bottle), 5, (0, 255, 0), -1)  # Change the color and size as needed
+
+                    # # Detect circle inside the box
+                    # # Extract the region of interest (ROI) from the RGB image within the bounding box of the detected bottle
+                    roi_rgb = self.rgb_image[int(y1-10):int(y2+10), int(x1-10):int(x2+10)]
+
+                    # Convert the ROI to grayscale
+                    gray_roi = cv2.cvtColor(roi_rgb, cv2.COLOR_BGR2GRAY)
+
+                    # Apply Gaussian blur to reduce noise
+                    blurred_roi = cv2.GaussianBlur(gray_roi, (5, 5), 0)
+
+                    # Detect circles using Hough Circle Transform
+                    circles = cv2.HoughCircles(blurred_roi, cv2.HOUGH_GRADIENT, dp=1, minDist=20, param1=50, param2=30, minRadius=10, maxRadius=20)
+                    self.circle_detected = False
+                    # Ensure circles were found
+                    if circles is not None:
+                        # Convert coordinates and radius to integers
+                        circles = np.round(circles[0, :]).astype("int")
+
+                        # Iterate over detected circles and draw them on the RGB image
+                        for (x, y, r) in circles:
+                            # Adjust coordinates to the original image
+                            x += int(x1)
+                            y += int(y1)
+                            center_x_bottle = x
+                            center_y_bottle = y
+
+                            # Draw the circle
+                            cv2.circle(self.rgb_image, (x, y), r, (0, 255, 0), 2)
+                            cv2.circle(self.rgb_image, (x, y), 2, (0, 255, 0), 3)  # Center of the circle
+                        self.circle_detected = True
+                    # ////////////////////////////////////////////////
+
+                    # cv2.circle(self.rgb_image, (center_x_bottle, center_y_bottle), 5, (0, 255, 0), -1)  # Change the color and size as needed
                     # Make sure the depth image is already available and synced with the current RGB frame
                     if self.depth_image is not None:
                         # Ensure center_x and center_y are within the bounds of the depth image
@@ -124,27 +175,33 @@ class RealSense:
                             depth_meters = depth * self.depth_scale  # Convert depth to meters
                             
                             # Assuming self.depth_intrinsics is set correctly
-                            # real_world_coords = rs.rs2_deproject_pixel_to_point(self.depth_intrinsics, [center_x_bottle, center_y_bottle], depth_meters)
-                            # real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, depth_meters)
-                            bottle_depth = self.closest_depth + 0.02
+                            bottle_depth = self.closest_depth + 0.048
                             real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, bottle_depth)
-                            print(f"Object real-world coordinates: x={real_world_coords[0]}, y={real_world_coords[1]}, z={real_world_coords[2]}")
-                            print(bottle_depth)
-                            self.bottle_pos = real_world_coords
+                            # print(f"Object real-world coordinates: x={real_world_coords[0]}, y={real_world_coords[1]}, z={real_world_coords[2]}")
+                            
+                            # print(bottle_depth)
+                            # print(self.circle_detected)
+                            to_cam_x = real_world_coords[0]*(-1) - (-0.0329)
+                            to_cam_y = real_world_coords[1]*(-1) - 0.0755
+                            distance = math.sqrt(to_cam_x*to_cam_x + to_cam_y*to_cam_y)
+                            if (distance < min_dis):
+                                min_dis = copy.deepcopy(distance)
+                                self.bottle_pos = copy.deepcopy(real_world_coords)
+                                nearest_x_bottle = copy.deepcopy(center_x_bottle)
+                                nearest_y_bottle = copy.deepcopy(center_y_bottle)
+                            # print(f"Object real-world coordinates: x={self.bottle_pos[0]}, y={self.bottle_pos[1]}, z={self.bottle_pos[2]}")
                     # /////////////////////////////////////////////
-                
-        
+            print(f"Object real-world coordinates: x={self.bottle_pos[0]}, y={self.bottle_pos[1]}, z={self.bottle_pos[2]}")
+            cv2.circle(self.rgb_image, (nearest_x_bottle, nearest_y_bottle), 5, (0, 255, 0), -1)
         else:
             pass
-        
-        # cv2.circle(self.rgb_image, (tung_x, tung_y), 5, (0, 255, 0), -1)
+
         
         width = int(self.rgb_image.shape[1] * 1.5)
         height = int(self.rgb_image.shape[0] * 1.5)
         self.rgb_image = cv2.resize(self.rgb_image, (width, height))
         # Display the image
         cv2.imshow('YOLO Detection', self.rgb_image)
-        # cv2.imshow('Depth Detection', self.depth_image)
         cv2.waitKey(1)  # Add this line to update the window; essential for imshow to work properly
 
     def depth_callback(self, data):
@@ -155,7 +212,11 @@ class RealSense:
         masked_image = np.ma.masked_equal(self.depth_image, 0.0)
 
         # Find the closest depth (minimum value) excluding zeros
-        self.closest_depth = masked_image.min() * self.depth_scale
+        closest_depth = masked_image.min() * self.depth_scale
+
+        if (closest_depth > 0.3):
+            self.closest_depth = closest_depth
+
 
     def img_processing(self):
         
@@ -201,9 +262,6 @@ class RealSense:
         # cv2.drawContours(img, contours, -1, (0, 255, 0), 3)
 
         if contours is not None:
-            # print("contour")
-            # Draw the contour itself (just for visualization)
-            # cv2.drawContours(img, [crate_contour], -1, (0, 255, 0), 3)
 
             # Calculate the bounding rectangle, which gives us the four points
             rect = cv2.minAreaRect(crate_contour)
@@ -253,13 +311,16 @@ class RealSense:
 
 if __name__ == '__main__':
     # Initialize the ROS Node
-    rospy.init_node('realsense_yolo', anonymous=True)
+    rospy.init_node('realsense_yolo', anonymous=True, log_level=1)
     
     # Create the RealSense object
     rs = RealSense()
 
-    # rs.get_bottle = True
+    # rs.get_bottle = False
+    # rs.get_crate = True
+
     rs.get_bottle = True
+    rs.get_crate = False
 
     # Spin to keep the script for exiting
     rospy.spin()
