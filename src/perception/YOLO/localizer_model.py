@@ -64,13 +64,6 @@ class RealSense:
         @param: flag A boolean value"""
 
         self.get_crate = flag
-        # if not flag:
-        #     self.crate_pos = None
-        # else:
-        #     if wait:
-        #         while self.crate_pos is None:
-        #             pass
-
         return self.get_crate
         
     def set_Bottle_Flag(self, flag: bool, wait=False):
@@ -79,13 +72,6 @@ class RealSense:
         @param: flag A boolean value"""
 
         self.get_bottle = flag
-        # if not flag:
-        #     self.bottle_pos = None
-        # else:
-        #     if wait:
-        #         while self.bottle_pos is None:
-        #             pass
-
         return self.get_bottle
 
     def get_crate_pos(self):

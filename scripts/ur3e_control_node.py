@@ -13,9 +13,9 @@ from ur3e_controller.collision_manager import CollisionManager
 from ur3e_controller.utility import *
 
 # Importing perception module
-from perception.utility import *
-from perception.localizer_model import RealSense
-from perception.classifier_model import Classifier
+from perception.YOLO.utility import *
+from perception.YOLO.localizer_model import RealSense
+from perception.YOLO.classifier_model import Classifier
 
 from copy import deepcopy
 
