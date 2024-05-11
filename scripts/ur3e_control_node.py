@@ -169,216 +169,140 @@ class MissionPlanner:
             # pose for further use as reset state after each bottle sorted                  #
             ## =========================================================================== ##
 
-            # self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
+            ## =========================================================================== ##
+            # =================STATE 0: LOCALIZE THE BOTTLE TO BE PICKED=================== #
+            # ----------------------------------------------------------------------------- #
+            # Localize the bottle to be picked and move to pick the bottle                  #
+            ## =========================================================================== ##
+
             if not done:
 
                 self.rs.set_Bottle_Flag(True)
-                rospy.sleep(1)
                 self.bottle_pose = self.rs.get_bottle_pos()
-                while self.bottle_pose is None:
-                    self.rate.sleep()
+
+                while self.bottle_pose is None:   # Wait until the bottle is detected
+
                     self.bottle_pose = self.rs.get_bottle_pos()
-                print(self.bottle_pose)
+                    if not self.rs.get_circle_flag():
+                        self.bottle_pose = None
+
+                    # self.rate.sleep()
+
+                # if self.rs.get_num_of_bottle() == 0:
+
+                #     rospy.loginfo("All bottles have been sorted!")
+                #     rospy.signal_shutdown("Finish sorting mission!")
+
+                rospy.loginfo(f"Bottle pose: {self.bottle_pose : 0.4f}")
+
+                # Turn off bottle flag to stop the bottle detection
                 self.rs.set_Bottle_Flag(False)
 
-                self.ur3e.open_gripper_to(width=580, force=200)
+                # Close the gripper to 500 0.1mm wide to fit in the tiny gripping state
+                self.ur3e.open_gripper_to(width=500, force=200)
                 rospy.sleep(1)
 
                 # Re-align end effector to the crate center in plane xy only.
                 pose = list_to_pose(
-                    [self.bottle_pose[0] + 0.01,     # x
-                     self.bottle_pose[1] + 0.005,     # y
-                     self.bottle_pose[2] - \
-                     HANG_OFFSET,                      # z
-                     0,                      # roll
-                     0,                      # pitch
-                     0]      # yaw
+                    [self.bottle_pose[0],
+                     self.bottle_pose[1] + 0.005,
+                     self.bottle_pose[2] - HANG_OFFSET,
+                     0,
+                     0,
+                     0]
                 )
 
-                # Go to just above crate centers
+                # Go to just above bottle neck
                 self.ur3e.go_to_pose_goal(pose=pose,
                                           child_frame_id="bottle_center",
                                           parent_frame_id="tool0")
 
+                # Lower the robot to the bottle neck
                 rospy.sleep(1)
                 self.ur3e.move_ee_along_axis(axis="z", delta=-0.07)
 
-                # lift_pose = list_to_pose(
-                #     [0,
-                #      0,
-                #      ENDPOINT_OFFSET + 0.05,
-                #      0,
-                #      0,
-                #      0])
-
-                # self.ur3e.go_to_pose_goal(pose=lift_pose,
-                #                           child_frame_id="bottle_center",
-                #                           parent_frame_id="tool0")
+                # Close the gripper to 180 0.1mm wide to grip the bottle
                 rospy.sleep(1)
-                self.ur3e.open_gripper_to(width=250, force=100)
+                self.ur3e.open_gripper_to(width=180, force=200)
+
+                # Add mesh of the bottle into planning scene for collision avoidance
+                # self.collisions.add_collision_object(
+                #     obj_id="bottle", pose=bottle_pose_raw, object_type="bottle", frame_id="base_link_inertia")
+
+                # # Attach the bottle to the end effector of the robot in planning scene
+                # _, bottle_id = self.collisions.add_bottle(
+                #     initial_pose=bottle_pose_stamped.pose)
+                # self.collisions.attach_object(
+                #     eef_link=self.ur3e.get_end_effector_link(), obj_id=bottle_id)
+
+                # Elevate the robot abit to avoid collision with the bottle
+                rospy.sleep(1)
+                self.ur3e.move_ee_along_axis(axis="z", delta=0.2)
+
+                # Move to the classify pose
+                rospy.sleep(1)
+                self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
 
                 done = True
 
-        # # Add mesh of the crate into planning scene for collision avoidance
-        # self.collisions.add_collision_object(
-        #     obj_id="crate", pose=self.crate_pose, object_type="crate", frame_id="base_link_inertia")
+            ## =========================================================================== ##
+            # =================STATE 1: CLASSIFY THE OBJECT AND DELIVER==================== #
+            # ----------------------------------------------------------------------------- #
+            #           Classify the object and deliver to the specified location           #
+            ## =========================================================================== ##
 
-        # # Start broadcasting the crate center
-        # self.set_transform_target(pose=pose,
-        #                           child_frame_id="crate_center",
-        #                           frame_id="tool0")
+            # # Turn on classification tag
+            # self.classifier.set_classify_flag(True, wait=True)
 
-        # # Move to crate center in plane xy
-        # try:
-        #     tf_received = self.tf_buffer.lookup_transform(
-        #         "base_link_inertia", "crate_center", rospy.Time(0), rospy.Duration(1.0))
-        # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-        #     self.rate.sleep()
-        #     continue            # If the transform is not received, wait for the next loop
+            # # Turn wrist 3 joint until bottle type classified
+            # cur_js = self.ur3e.get_current_joint_values()
+            # target_js = deepcopy(cur_js)
+            # target_js[-1] = cur_js[-1] + 1.57
+            # while self.classifier.bottle_class is None:
+            #     self.ur3e.go_to_goal_joint(target_js, wait=False)
 
-        # # Add mesh of the crate into planning scene for collision avoidance
-        # self.collisions.add_collision_object(
-        #     obj_id="crate", pose=self.crate_pose, object_type="crate", frame_id="base_link_inertia")
+            # self.ur3e.stop()
 
-        # # Visualize the target pose
-        # self.visualize_target_pose(self.crate_pose.pose)
+            # bottle_class = deepcopy(self.classifier.bottle_class)
+            # self.classifier.set_classify_flag(False)      # stop classification task performing in RGB callback
 
-        # # Command the robot to move to the target pose.  State reset at pose right on top of the crate center. The system have to ensure that the crate is not moved during the process
-        # self.ur3e.go_to_pose_goal(self.crate_pose)
-        # rospy.sleep(1)
+            # # Set type of bottle by changing the object name in planning scene and its color
+            # self.collisions.update_bottle_type(bottle_id, bottle_class)
 
-        ## =========================================================================== ##
-        # =================STATE 0: LOCALIZE THE BOTTLE TO BE PICKED=================== #
-        # ----------------------------------------------------------------------------- #
-        # Localize the bottle to be picked and move to pick the bottle                  #
-        ## =========================================================================== ##
+            # # Plan a collision free path to the deliver pose with dedicated bottle type and hang
+            # deliver_pose = BOTTLE_PLACEMENT[bottle_class]
+            # deliver_pose.position.z = self.ur3e.get_current_pose().position.z
+            # self.ur3e.go_to_pose_goal(deliver_pose)
+            # rospy.sleep(1)
 
-        # self.rs.set_Bottle_Flag(True, wait=True)
+            # # Lower the robot to the deliver pose and drop the bottle
+            # self.ur3e.go_to_pose_goal(BOTTLE_PLACEMENT[bottle_class])
+            # self.ur3e.open_gripper(force=400)
+            # rospy.sleep(1)
 
-        # if self.rs.bottle_num == 0:
+            # self.collisions.detach_object(
+            #     eef_link=self.ur3e.get_end_effector_link(),
+            #     obj_id=bottle_id
+            # )
 
-        #     rospy.loginfo("All bottles have been sorted!")
-        #     rospy.signal_shutdown("Finish sorting mission!")
+            # ## =========================================================================== ##
+            # # =================STATE 2: HANG THE ROBOT BACK TO LOCALIZING POSE============= #
+            # # ----------------------------------------------------------------------------- #
+            # #                                                                               #
+            # ## =========================================================================== ##
 
-        # bottle_pose_raw = self.rs.get_bottle_pose()
-        # self.rs.set_Bottle_Flag(False)
+            # self.ur3e.elevate_ee(delta_z=0)
 
-        # # Re-align end effector to the bottle in plane xy only.
-        # pose = list_to_pose(
-        #     [bottle_pose_raw[0],
-        #      bottle_pose_raw[1],
-        #      0,
-        #      0,
-        #      0,
-        #      bottle_pose_raw[3]]
-        # )
+            # Move the robot to the home position
 
-        # # Go to just above the bottle
-        # self.ur3e.go_to_pose(pose=pose,
-        #                      child_frame_id="bottle",
-        #                      frame_id="tool0")
+            # Reset the planning scene
 
-        # # Add mesh of the bottle into planning scene for collision avoidance
-        # self.collisions.add_collision_object(
-        #     obj_id="bottle", pose=bottle_pose_raw, object_type="bottle", frame_id="base_link_inertia")
+            # rospy.loginfo("System loop running")
 
-        # # Start broadcasting the bottle center
-        # self.set_transform_target(pose=pose,
-        #                           child_frame_id="bottle_center",
-        #                           frame_id="tool0")
+            # if done:
+            #     rospy.signal_shutdown("Mission complete")
 
-        # # Move to bottle center in plane xy
-        # try:
-
-        #     tf_received = self.tf_buffer.lookup_transform(
-        #         "base_link_inertia", "bottle_center", rospy.Time(0), rospy.Duration(1.0))
-
-        # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-        #     self.rate.sleep()
-        #     continue
-
-        # bottle_pose_stamped = transformstamped_to_posestamped(
-        #     tf_received)
-
-        # self.visualize_target_pose(bottle_pose_stamped.pose)
-        # self.ur3e.go_to_pose_goal(bottle_pose_stamped)
-
-        # # Command the robot to move to the lower the gripper to the bottle
-        # goal = deepcopy(bottle_pose_stamped)
-        # goal.pose.position.z -= bottle_pose_raw[2]
-        # self.visualize_target_pose(goal.pose)
-        # self.ur3e.go_to_pose_goal(goal)
-
-        # self.ur3e.close_gripper(force=400)
-        # rospy.sleep(1)
-
-        # # Attach the bottle to the end effector of the robot in planning scene
-        # _, bottle_id = self.collisions.add_bottle(
-        #     initial_pose=bottle_pose_stamped.pose)
-        # self.collisions.attach_object(
-        #     eef_link=self.ur3e.get_end_effector_link(), obj_id=bottle_id)
-
-        # # Move the robot to the classify pose
-        # self.ur3e.go_to_pose_goal(CLASSIFY_POSE)
-
-        ## =========================================================================== ##
-        # =================STATE 1: CLASSIFY THE OBJECT AND DELIVER==================== #
-        # ----------------------------------------------------------------------------- #
-        #           Classify the object and deliver to the specified location           #
-        ## =========================================================================== ##
-
-        # # Turn on classification tag
-        # self.classifier.set_classify_flag(True, wait=True)
-
-        # # Turn wrist 3 joint until bottle type classified
-        # cur_js = self.ur3e.get_current_joint_values()
-        # target_js = deepcopy(cur_js)
-        # target_js[-1] = cur_js[-1] + 1.57
-        # while self.classifier.bottle_class is None:
-        #     self.ur3e.go_to_goal_joint(target_js, wait=False)
-
-        # self.ur3e.stop()
-
-        # bottle_class = deepcopy(self.classifier.bottle_class)
-        # self.classifier.set_classify_flag(False)      # stop classification task performing in RGB callback
-
-        # # Set type of bottle by changing the object name in planning scene and its color
-        # self.collisions.update_bottle_type(bottle_id, bottle_class)
-
-        # # Plan a collision free path to the deliver pose with dedicated bottle type and hang
-        # deliver_pose = BOTTLE_PLACEMENT[bottle_class]
-        # deliver_pose.position.z = self.ur3e.get_current_pose().position.z
-        # self.ur3e.go_to_pose_goal(deliver_pose)
-        # rospy.sleep(1)
-
-        # # Lower the robot to the deliver pose and drop the bottle
-        # self.ur3e.go_to_pose_goal(BOTTLE_PLACEMENT[bottle_class])
-        # self.ur3e.open_gripper(force=400)
-        # rospy.sleep(1)
-
-        # self.collisions.detach_object(
-        #     eef_link=self.ur3e.get_end_effector_link(),
-        #     obj_id=bottle_id
-        # )
-
-        # ## =========================================================================== ##
-        # # =================STATE 2: HANG THE ROBOT BACK TO LOCALIZING POSE============= #
-        # # ----------------------------------------------------------------------------- #
-        # #                                                                               #
-        # ## =========================================================================== ##
-
-        # self.ur3e.elevate_ee(delta_z=0)
-
-        # Move the robot to the home position
-
-        # Reset the planning scene
-
-        # rospy.loginfo("System loop running")
-
-        # if done:
-        #     rospy.signal_shutdown("Mission complete")
-
-        # rospy.sleep(1)
+            # rospy.sleep(1)
 
     def cleanup(self):
 
@@ -387,7 +311,7 @@ class MissionPlanner:
         self.FINISHED = True
 
         self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
-        self.ur3e.open_gripper_to(width=1100, force=400)
+        # self.ur3e.open_gripper_to(width=1100, force=400)
         self.ur3e.shutdown()
 
         # remove all collision objects

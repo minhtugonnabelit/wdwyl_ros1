@@ -7,7 +7,7 @@ import tf2_ros
 import rospy
 import moveit_commander
 from moveit_commander import RobotCommander, PlanningSceneInterface, MoveGroupCommander
-from moveit_msgs.msg import RobotTrajectory, DisplayTrajectory, Constraints, JointConstraint
+from moveit_msgs.msg import RobotTrajectory, DisplayTrajectory, Constraints, JointConstraint, OrientationConstraint
 
 from sensor_msgs.msg import JointState
 
@@ -57,6 +57,7 @@ class UR3e:
         self._scene = PlanningSceneInterface()
         self._group = MoveGroupCommander("ur3e")
         self._gripper = Gripper()
+        self.constraints = Constraints()
         self.virtual_UR = UR3()
         self.virtual_UR_tool = SE3(0, 0, 0.2)
 
@@ -125,7 +126,7 @@ class UR3e:
         constraints.name = "elbow_up"
 
         joint_constraint = JointConstraint()
-        joint_constraint.joint_name = "elbow_joint" 
+        joint_constraint.joint_name = "elbow_joint"
         joint_constraint.position = -2.3562/2
         joint_constraint.tolerance_above = 2.3562/2
         joint_constraint.tolerance_below = 2.3562/2
@@ -133,7 +134,7 @@ class UR3e:
         constraints.joint_constraints.append(joint_constraint)
 
         joint_constraint_01 = JointConstraint()
-        joint_constraint_01.joint_name = "wrist_1_joint" 
+        joint_constraint_01.joint_name = "wrist_1_joint"
         joint_constraint_01.position = -pi/2
         joint_constraint_01.tolerance_above = pi/2
         joint_constraint_01.tolerance_below = pi/2
@@ -141,39 +142,49 @@ class UR3e:
         constraints.joint_constraints.append(joint_constraint_01)
 
         joint_constraint_02 = JointConstraint()
-        joint_constraint_02.joint_name = "shoulder_lift_joint" 
+        joint_constraint_02.joint_name = "shoulder_lift_joint"
         joint_constraint_02.position = -2.443
         joint_constraint_02.tolerance_above = 1.746
         joint_constraint_02.tolerance_below = 1.746
-        joint_constraint_02.weight = 1  
+        joint_constraint_02.weight = 1
         constraints.joint_constraints.append(joint_constraint_02)
 
-        joint_constraint_03 = JointConstraint() 
-        joint_constraint_03.joint_name = "wrist_2_joint" 
+        joint_constraint_03 = JointConstraint()
+        joint_constraint_03.joint_name = "wrist_2_joint"
         joint_constraint_03.position = pi/2
         joint_constraint_03.tolerance_above = 0.5
         joint_constraint_03.tolerance_below = 0.5
-        joint_constraint_03.weight = 1  
+        joint_constraint_03.weight = 1
         constraints.joint_constraints.append(joint_constraint_03)
 
-        joint_constraint_04 = JointConstraint() 
-        joint_constraint_04.joint_name = "shoulder_pan_joint" 
+        joint_constraint_04 = JointConstraint()
+        joint_constraint_04.joint_name = "shoulder_pan_joint"
         joint_constraint_04.position = 2.0944
         joint_constraint_04.tolerance_above = 1.48353
         joint_constraint_04.tolerance_below = 1.48353
-        joint_constraint_04.weight = 1  
+        joint_constraint_04.weight = 1
         constraints.joint_constraints.append(joint_constraint_04)
 
-        # joint_constraint_05 = JointConstraint() 
-        # joint_constraint_05.joint_name = "wrist_3_joint" 
+        # orientation_constraint = OrientationConstraint()
+        # orientation_constraint.header = self._planning_frame
+        # orientation_constraint.link_name = self._eef_link
+        # orientation_constraint.orientation = self.get_current_pose().orientation
+        # orientation_constraint.absolute_x_axis_tolerance = 0.001
+        # orientation_constraint.absolute_x_axis_tolerance = 0.001
+        # orientation_constraint.absolute_x_axis_tolerance = 1.57
+        # orientation_constraint.weight = 0.8
+        # constraints.orientation_constraints.append(orientation_constraint)
+
+        # joint_constraint_05 = JointConstraint()
+        # joint_constraint_05.joint_name = "wrist_3_joint"
         # joint_constraint_05.position = 0.5
-        # joint_constraint_05.tolerance_above = 2
-        # joint_constraint_05.tolerance_below = 2
-        # joint_constraint_05.weight = 0.5 
+        # joint_constraint_05.tolerance_above = 3.14
+        # joint_constraint_05.tolerance_below = 3.14
+        # joint_constraint_05.weight = 1
         # constraints.joint_constraints.append(joint_constraint_05)
 
+        self.constraints = constraints
         self._group.set_path_constraints(constraints)
-
 
     def shutdown(self):
         r"""
@@ -191,7 +202,7 @@ class UR3e:
         display_trajectory.trajectory.append(plan)
         self._display_trajectory_publisher.publish(display_trajectory)
 
-    ## Robot control basic actions
+    # Robot control basic actions
 
     def go_to_goal_joint(self, joint_goal, wait=True):
         r"""
@@ -251,25 +262,11 @@ class UR3e:
         waypoints.append(current_pose)
         waypoints.append(target_pose)
 
-        # for i in range(1, 6):
-        #     scale = i / 5
-
-        #     pt = Pose()
-        #     pt.position.x = current_pose.position.x + scale * \
-        #         (target_pose.position.x - current_pose.position.x)
-        #     pt.position.y = current_pose.position.y + scale * \
-        #         (target_pose.position.y - current_pose.position.y)
-        #     pt.position.z = current_pose.position.z + scale * \
-        #         (target_pose.position.z - current_pose.position.z)
-        #     pt.orientation = target_pose.orientation
-
-        #     waypoints.append(pt)
-
         # Blocking loop to ensure the cartesian path is fully planned
         while fraction < 1.0:
 
             (plan, fraction) = self._group.compute_cartesian_path(
-                waypoints, max_step, jump_thresh, avoid_collisions=True)
+                waypoints, max_step, jump_thresh, avoid_collisions=True, path_constraints=self.constraints)
 
             fix_itterations += 1
             if fix_itterations > 50:  # Maxium fix itterations
@@ -296,10 +293,10 @@ class UR3e:
 
     # Delicted actions
     def go_to_target_pose_name(self, name):
-        
+
         self._group.set_named_target(name)
         self._group.go(wait=True)
-        
+
         self._group.plan()
         joint_goal = self._group.get_named_target_values(name)
         cur_joint = self._group.get_current_joint_values()
@@ -414,7 +411,7 @@ class UR3e:
         pose = transformstamped_to_pose(
             tf_received)
 
-        return pose if not to_SE3 else pose_to_SE3(pose) 
+        return pose if not to_SE3 else pose_to_SE3(pose)
 
     # Visualization
     def visualize_target_pose(self, pose: Pose, type: int = 2, frame_id: str = "trolley"):
@@ -426,16 +423,16 @@ class UR3e:
 
         target_marker = create_marker(frame_id, type, pose)
         self._marker_pub.publish(target_marker)
-    
+
     # Callbacks
-    def _joint_states_callback(self, data : JointState):
+    def _joint_states_callback(self, data: JointState):
         r"""
         Callback function for the joint states subscriber.
         This data feeds directly to the virtual UR3 model as kinematic solver."""
 
         self.virtual_UR.q = data.position
 
-    def ikine_opt(self, initial_guess, desired_config, desired_pose : SE3) -> list:
+    def ikine_opt(self, initial_guess, desired_config, desired_pose: SE3) -> list:
 
         print(desired_pose)
 
@@ -443,27 +440,28 @@ class UR3e:
         def objective_function(x, desired_config):
             """Objective function to minimize. This should return the difference between the current joint state and the desired joint state."""
             return np.linalg.norm(x - desired_config)
-            
 
         def constraint_function(x, desired_pose):
 
             base_rot = np.eye(4)
-            base_rot[0:3,0:3] = smb.rotz(np.pi)
+            base_rot[0:3, 0:3] = smb.rotz(np.pi)
 
             """Constraint function for the optimization. This should return 0 when the forward kinematics of the current joint state match the desired pose."""
-            current_pose = base_rot @ self.virtual_UR.fkine(x,tool=self.virtual_UR_tool).A
-            pos_error = np.linalg.norm(current_pose[0:3,3] - desired_pose.A[0:3,3])
-            ori_error = R.from_matrix(np.linalg.inv(current_pose[0:3,0:3]) @ desired_pose.A[0:3,0:3]).magnitude()
+            current_pose = base_rot @ self.virtual_UR.fkine(
+                x, tool=self.virtual_UR_tool).A
+            pos_error = np.linalg.norm(
+                current_pose[0:3, 3] - desired_pose.A[0:3, 3])
+            ori_error = R.from_matrix(np.linalg.inv(
+                current_pose[0:3, 0:3]) @ desired_pose.A[0:3, 0:3]).magnitude()
             return pos_error + ori_error
-        
+
         # Define the constraint
-        constraint = {'type': 'eq', 'fun': constraint_function, 'args': (desired_pose)}
+        constraint = {'type': 'eq',
+                      'fun': constraint_function, 'args': (desired_pose)}
 
         # Call the minimize function
-        result = minimize(objective_function, initial_guess, args=(desired_config), constraints=constraint)
+        result = minimize(objective_function, initial_guess,
+                          args=(desired_config), constraints=constraint)
 
         # Return the optimized joint state
         return result.x
-
-
-    

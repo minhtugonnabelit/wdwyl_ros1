@@ -133,6 +133,9 @@ class RealSense:
         # Convert the ROS Image message to a cv2 image
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
+        brightness_increment = 50
+        self.rgb_image = cv2.add(self.rgb_image, (brightness_increment, brightness_increment, brightness_increment, 0))
+
         if (self.get_crate == True and self.get_bottle == False):
             self.img_processing()
         
