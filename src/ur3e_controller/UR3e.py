@@ -113,8 +113,7 @@ class UR3e:
         camera_mount_pose.pose = list_to_pose(
             [0.0, -0.0455, 0.0732, 0.0, 0.0, 0.0])
         camera_mount_pose.header.frame_id = "tool0"
-        self._scene.add_box("camera_mount", camera_mount_pose,
-                            size=(0.08, 0.1, 0.035))
+        self._scene.add_box("camera_mount", camera_mount_pose, size=(0.08, 0.1, 0.035))
         self._scene.attach_mesh("tool0", "camera_mount", touch_links=[
             "onrobot_rg2_base_link"])
 
