@@ -6,7 +6,7 @@ from ultralytics import YOLO
 import numpy as np
 import pyrealsense2 as rs
 
-from perception.utility import *
+# from perception.utility import *
 
 class Classifier:
 
