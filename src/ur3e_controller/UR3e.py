@@ -132,13 +132,13 @@ class UR3e:
         joint_constraint.weight = 1
         constraints.joint_constraints.append(joint_constraint)
 
-        joint_constraint_01 = JointConstraint()
-        joint_constraint_01.joint_name = "wrist_1_joint"
-        joint_constraint_01.position = -pi/2
-        joint_constraint_01.tolerance_above = pi/2
-        joint_constraint_01.tolerance_below = pi/2
-        joint_constraint_01.weight = 1
-        constraints.joint_constraints.append(joint_constraint_01)
+        # joint_constraint_01 = JointConstraint()
+        # joint_constraint_01.joint_name = "wrist_1_joint"
+        # joint_constraint_01.position = -pi/2
+        # joint_constraint_01.tolerance_above = pi/2
+        # joint_constraint_01.tolerance_below = pi/2
+        # joint_constraint_01.weight = 1
+        # constraints.joint_constraints.append(joint_constraint_01)
 
         joint_constraint_02 = JointConstraint()
         joint_constraint_02.joint_name = "shoulder_lift_joint"
@@ -164,23 +164,13 @@ class UR3e:
         joint_constraint_04.weight = 1
         constraints.joint_constraints.append(joint_constraint_04)
 
-        # orientation_constraint = OrientationConstraint()
-        # orientation_constraint.header = self._planning_frame
-        # orientation_constraint.link_name = self._eef_link
-        # orientation_constraint.orientation = self.get_current_pose().orientation
-        # orientation_constraint.absolute_x_axis_tolerance = 0.001
-        # orientation_constraint.absolute_x_axis_tolerance = 0.001
-        # orientation_constraint.absolute_x_axis_tolerance = 1.57
-        # orientation_constraint.weight = 0.8
-        # constraints.orientation_constraints.append(orientation_constraint)
-
-        # joint_constraint_05 = JointConstraint()
-        # joint_constraint_05.joint_name = "wrist_3_joint"
-        # joint_constraint_05.position = 0.5
-        # joint_constraint_05.tolerance_above = 3.14
-        # joint_constraint_05.tolerance_below = 3.14
-        # joint_constraint_05.weight = 1
-        # constraints.joint_constraints.append(joint_constraint_05)
+        joint_constraint_05 = JointConstraint()
+        joint_constraint_05.joint_name = "wrist_3_joint"
+        joint_constraint_05.position = self._group.get_current_joint_values()[5]
+        joint_constraint_05.tolerance_above = 3.14
+        joint_constraint_05.tolerance_below = 3.14
+        joint_constraint_05.weight = 1
+        constraints.joint_constraints.append(joint_constraint_05)
 
         self.constraints = constraints
         self._group.set_path_constraints(constraints)

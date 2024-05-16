@@ -139,7 +139,12 @@ class MissionPlanner:
                 #     rospy.loginfo("All bottles have been sorted!")
                 #     rospy.signal_shutdown("Finish sorting mission!")
 
-                rospy.loginfo(f"Bottle pose: {self.bottle_pose : 0.4f}")
+                if self.bottle_pose[-1] is None:
+                    self.bottle_pose[-1] = 0.0
+
+                # rospy.loginfo(f"Bottle pose: {np.round(self.bottle_pose, 4)}")
+                rospy.loginfo(f"Bottle pose: {self.bottle_pose}")
+
 
                 # Turn off bottle flag to stop the bottle detection
                 self.rs.set_Bottle_Flag(False)
@@ -177,11 +182,10 @@ class MissionPlanner:
                 # self.collisions.attach_object(
                 #     eef_link=self.ur3e.get_end_effector_link(), obj_id=bottle_id)
 
-                # Elevate the robot abit to avoid collision with the bottle
-                rospy.sleep(1)
-                self.ur3e.move_ee_along_axis(axis="z", delta=0.2)
-
                 # Move to the classify pose
+                rospy.sleep(1)
+                self.ur3e.move_ee_along_axis(axis="z", delta=0.14)
+
                 rospy.sleep(1)
                 self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
 
@@ -230,7 +234,7 @@ class MissionPlanner:
 
         self.FINISHED = True
 
-        self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
+        # self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
         # self.ur3e.open_gripper_to(width=1100, force=400)
         self.ur3e.shutdown()
 

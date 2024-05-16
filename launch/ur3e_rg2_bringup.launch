@@ -31,7 +31,7 @@
   <include file="$(find ur_robot_driver)/launch/ur_common.launch" pass_all_args="true"/>
   <include file="$(find onrobot_rg_control)/launch/bringup_server.launch">
     <arg name="gripper" value="rg2"/>
-    <arg name="gripper_ip" value="192.168.1.1"/>
+    <arg name="ip" value="192.168.1.1"/>
   </include>
 
   <!-- Load and initialize Realsense driver -->
