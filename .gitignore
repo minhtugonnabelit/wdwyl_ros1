@@ -1,3 +1,4 @@
 build/
 __pycache__
 .vscode/
+src/perception/brand_classification/data
