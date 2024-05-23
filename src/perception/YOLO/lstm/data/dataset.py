@@ -14,6 +14,11 @@ MODEL_PATH = '/root/aifr/wdwyl_ros1/config/detect/detect/train/weights/best.pt'
 class BoundingBoxDataset(Dataset):
     """
     Dataset for the LSTM model
+    Use FrameChecker to preprocess the videos, save the sequence to a npy file
+
+    The target data is a sequence of whether a bounding box appears in the frame or not (check FrameChecker for more details)
+
+    The labels are the ground truth for the sequence (1 for true positive and 0 for false positive)
     
     Args:
         videos_path (str): The path to the videos directory
@@ -55,7 +60,7 @@ class BoundingBoxDataset(Dataset):
                     self.labels.append(labels[bb_id])
 
     def __len__(self):
-        return len(self.sequences) # each sequence needs the prediction as a ground truth
+        return len(self.sequences)
     
     def __getitem__(self, idx):
         sequence = torch.tensor(self.sequences[idx], dtype=torch.float32).to(self.device)
@@ -98,16 +103,17 @@ class FrameChecker:
         Process the video and save the sequence to a npy file
         """
         
-        print("Getting all of the detected bounding boxes")
+        print("------ Getting all of the detected bounding boxes ------")
         all_detected_bbox = self.get_detection()
 
-        print("Labeling the valid bounding boxes. Press 'q' to accept, 'f' to reject")
+        print("------ Labeling the valid bounding boxes ------")
+        print("Press 'q' to accept, 'f' to reject")
         valid_bbox = self.label_valid_bbox()
 
-        print("Getting the sequence and save to npy file")
+        print("------ Getting the sequence and save to npy file ------")
         sequence_path = self.get_sequence(all_detected_bbox)
 
-        print("Getting the labels")
+        print("------ Getting the labels ------")
         labels = self.get_label(all_detected_bbox, valid_bbox)
 
         return sequence_path, labels
@@ -234,6 +240,13 @@ class FrameChecker:
     def get_sequence(self, all_detected_bbox):
         """
         From the detected bounding boxes and ground truth bounding boxes, get the sequence 
+
+        The sequence is a list of list of 0 and 1 (1 means the bounding box is detected in the frame, 0 otherwise)
+        
+        Therefore, sequence is a list of list of 0 and 1. 
+        The top level list represents a list of bounding boxes, each inner list represents a single bounding box. 
+        Each element in the inner list represents a frame, can be 0 and 1. 
+        0 means the bounding box is not detected in the frame, 1 otherwise.
         """
 
         sequence = [[] for _ in range(len(all_detected_bbox))]
