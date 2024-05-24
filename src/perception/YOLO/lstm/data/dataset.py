@@ -4,8 +4,10 @@ import numpy as np
 import cv2
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from ultralytics import YOLO
+
+import matplotlib
 import matplotlib.pyplot as plt
 
 MODEL_PATH = '/root/aifr/wdwyl_ros1/config/detect/detect/train/weights/best.pt'
@@ -30,6 +32,7 @@ class BoundingBoxDataset(Dataset):
     def __init__(self, videos_path, yolo_model, sequence_length):
         self.videos_path = videos_path
         self.videos = os.listdir(videos_path)
+        print("self.videos", self.videos)
         self.yolo_model = yolo_model
 
         # self.npy_files = os.listdir(BoundingBoxDataset.DATA_DIR)
@@ -41,8 +44,19 @@ class BoundingBoxDataset(Dataset):
         
     def preprocess(self):
         """
-        Preprocess the videos to get the bounding boxes
+        Preprocess the videos to get the bounding boxes and save into a npy file
+        Ignore the videos that have been processed
         """
+
+        # # Check which videos have been processed  
+        # unprocessed_videos = []
+        # for video in self.videos:
+        #     filename, _ = os.path.splitext(video)
+        #     npy_file_path = os.path.join(BoundingBoxDataset.DATA_DIR, f"sequence_{filename}.npy")
+        #     print("npy_file_path", npy_file_path)
+
+        #     if not os.path.isfile(npy_file_path):
+        #         unprocessed_videos.append(video)
 
         self.sequences = []
         self.labels = []
@@ -59,6 +73,7 @@ class BoundingBoxDataset(Dataset):
                     self.sequences.append(bbox[i:i+self.sequence_length])
                     self.labels.append(labels[bb_id])
 
+
     def __len__(self):
         return len(self.sequences)
     
@@ -66,13 +81,6 @@ class BoundingBoxDataset(Dataset):
         sequence = torch.tensor(self.sequences[idx], dtype=torch.float32).to(self.device)
         label = torch.tensor(self.labels[idx], dtype=torch.float32).to(self.device)
         return sequence, label
-
-
-
-
-
-def is_equal(p1, p2, threshold=200):
-    return abs(p1-p2) < threshold
 
 
 class FrameChecker:
@@ -107,14 +115,19 @@ class FrameChecker:
         all_detected_bbox = self.get_detection()
 
         print("------ Labeling the valid bounding boxes ------")
-        print("Press 'q' to accept, 'f' to reject")
-        valid_bbox = self.label_valid_bbox()
+        # print("Press 'q' to accept, 'f' to reject")
+        # valid_bbox = self.label_valid_bbox()
+        valid_bbox = self.fake_labeling_bbox(all_detected_bbox)
 
         print("------ Getting the sequence and save to npy file ------")
         sequence_path = self.get_sequence(all_detected_bbox)
 
         print("------ Getting the labels ------")
         labels = self.get_label(all_detected_bbox, valid_bbox)
+        
+        print("\nDetected bounding boxes:", all_detected_bbox)
+        print("\nValid bounding boxes:", valid_bbox)
+        print("\nLabels:", labels)
 
         return sequence_path, labels
 
@@ -143,9 +156,12 @@ class FrameChecker:
 
     def label_valid_bbox(self):
         '''
-        Label using the first frame of the video
+        Allow manual labeling using the first frame of the video
         Can add setting to use the next frame if the first frame is not good enough
         Show the final selection at the end, try again if not approved
+
+        Issue: 
+            The first frame is not always the best frame to get the bounding boxes
         '''
 
         while True:
@@ -205,6 +221,65 @@ class FrameChecker:
         return valid_bbox
 
 
+    def fake_labeling_bbox(self, all_detected_bbox, threshold=0.8):
+        """
+        """
+
+        valid_bbox = []
+
+        # filename = os.path.basename(self.video_path)
+        # video_name, _ = os.path.splitext(filename)
+        # save_path = os.path.join(FrameChecker.DATA_DIR, f'sequence_{video_name}.npy')  
+
+        # if not os.path.isfile(save_path):
+        #     return save_path
+
+        # If not yet saved into npy, process the video
+        # sequence = [[] for _ in range(len(all_detected_bbox))]
+
+        cap = self.init_cap()
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        min_frames = int(total_frames * threshold)
+
+        appear_in_frame = [0 for _ in range(len(all_detected_bbox))]
+
+
+        with torch.no_grad():
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                results = self.model(frame)[0]    
+
+                # all_detected_bbox_in_frame = []
+                # for id, d_bbox in enumerate(all_detected_bbox): # For each detected bbox
+
+                #     # Does that bbox appear in this frame?
+ 
+                # assert len(all_detected_bbox) == len(all_detected_bbox_in_frame)
+
+                # for i in range(len(all_detected_bbox)):
+                #     if all_detected_bbox_in_frame[i]:
+                #         sequence[i].append(1)
+                #     else:
+                #         sequence[i].append(0)
+
+                for id_bbox, d_bbox in enumerate(all_detected_bbox):
+
+                    for result in results.boxes.data.tolist():
+                        x1, y1, x2, y2, score, cls = result
+                        if self.is_bbox_matched(d_bbox, (x1, y1, x2, y2)):
+                            appear_in_frame[id_bbox] += 1
+                            break
+        
+        for id_bbox, appear in enumerate(appear_in_frame):
+            if appear >= min_frames:
+                valid_bbox.append(all_detected_bbox[id_bbox])
+
+        return valid_bbox
+    
+
     def get_detection(self):
         """
         Run through the videos and get all the detected bounding boxes
@@ -249,6 +324,14 @@ class FrameChecker:
         0 means the bounding box is not detected in the frame, 1 otherwise.
         """
 
+        filename = os.path.basename(self.video_path)
+        video_name, _ = os.path.splitext(filename)
+        save_path = os.path.join(FrameChecker.DATA_DIR, f'sequence_{video_name}.npy')  
+
+        if not os.path.isfile(save_path):
+            return save_path
+
+        # If not yet saved into npy, process the video
         sequence = [[] for _ in range(len(all_detected_bbox))]
 
         cap = self.init_cap()
@@ -282,12 +365,7 @@ class FrameChecker:
                     else:
                         sequence[i].append(0)
 
-        # print(sequence)
-
-        # Save to npy file
-        filename = os.path.basename(self.video_path)
-        video_name, _ = os.path.splitext(filename)
-        save_path = os.path.join(FrameChecker.DATA_DIR, f'sequence_{video_name}.npy')        
+        # Save to npy file   
         np.save(save_path, np.array(sequence))
 
         return save_path
@@ -313,13 +391,34 @@ class FrameChecker:
         return labels
 
 
+def is_equal(p1, p2, threshold=200):
+    return abs(p1-p2) < threshold
+
+def inspect_dataloader(dataloader, num_batches=5):
+    for i, (sequences, labels) in enumerate(dataloader):
+        print(f"Batch {i+1}")
+        print("Sequences:", sequences)
+        print("Labels:", labels)
+        print("Sequences shape:", sequences.shape)
+        print("Labels shape:", labels.shape)
+        if i >= num_batches - 1:  # Stop after inspecting the desired number of batches
+            break
+
 if __name__ == '__main__':
 
     model = YOLO(MODEL_PATH)
-    video_path = '/root/aifr/wdwyl_ros1/videos/IMG_1746.mp4' # Width=1080, Height=1920
-
+    sequance_length = 20
+    data_path = '/root/aifr/wdwyl_ros1/videos'
+    train_data_path = os.path.join(data_path, 'train')
+    val_data_path = os.path.join(data_path, 'val')
 
     # checker = FrameChecker(model, video_path)
     # checker.process()
+    batch_size = 1
+    train_dataset = BoundingBoxDataset(train_data_path, yolo_model=model, sequence_length=sequance_length)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    data = BoundingBoxDataset('/root/aifr/wdwyl_ros1/videos', 10)
+    # val_dataset = BoundingBoxDataset(val_data_path, sequence_length=sequance_length)
+    # val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+    
+    inspect_dataloader(train_loader)
