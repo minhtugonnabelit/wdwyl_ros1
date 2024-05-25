@@ -8,7 +8,7 @@ This package is an integration of Moveit! planning framework and YOLO V8 model
 Beside the robot UR3e with OnRobot RG2 gripper, the system requires additional hardware modification and sensors setup perception system.
 Here is an image of an example setup around the robot on a custom trolley.
 
-![Example Image](image/imfine.png)
+![Example Image](image/image.png)
 
 
 #### Moveit! and YOLO setup
