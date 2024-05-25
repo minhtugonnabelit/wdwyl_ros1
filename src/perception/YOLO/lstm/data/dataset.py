@@ -37,7 +37,8 @@ class BoundingBoxDataset(Dataset):
         self.sequence_length = sequence_length
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.default_seq_label = default_seq_label
+        self.default_seq_label = default_seq_label + f'_{self.sequence_length}.npz'
+
         self.preprocess()
 
 
@@ -53,7 +54,6 @@ class BoundingBoxDataset(Dataset):
 
         self.sequences = []
         self.labels = []
-
 
         if not os.path.isfile(save_path):
             for video in self.videos:
@@ -82,6 +82,41 @@ class BoundingBoxDataset(Dataset):
             default = np.load(save_path)
             self.sequences = default['sequences']
             self.labels = default['labels']
+
+
+    def get_all_videos_full_sequence(self):
+
+        save_path = os.path.join(BoundingBoxDataset.DATA_DIR, 'all_videos_full_sequence.npz')
+        if not os.path.isfile(save_path):
+            all_sequences = []
+            for video in self.videos:
+                video_path = os.path.join(self.videos_path, video)
+
+                checker = FrameChecker(self.yolo_model, video_path)
+                sequence_path, labels = checker.process()
+                sequence = np.load(sequence_path)
+                all_sequences.append(sequence)
+
+            np.savez(save_path, sequences=all_sequences)
+
+        data = np.load(save_path, allow_pickle=True)
+        np.set_printoptions(threshold=np.inf, linewidth=np.inf)
+
+        output_path = os.path.join(BoundingBoxDataset.DATA_DIR, 'all_videos_full_sequence.txt')
+        with open(output_path, 'w') as f:
+            # Iterate through each item in the NPZ file
+            for key, array in data.items():
+                # Write the key and array shape to the file
+                f.write(f"Array '{key}' with shape {array.shape}:\n")
+                # Convert array to string and write it to the file
+                np.savetxt(f, array, fmt='%s')
+                # Add a newline for separation between arrays
+                f.write('\n')
+
+
+
+        
+
 
 
     def __len__(self):
@@ -239,7 +274,7 @@ class FrameChecker:
         valid_bbox = []
 
         cap = self.init_cap()
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) # 332
         min_frames = int(total_frames * threshold)
 
         appear_in_frame = [0 for _ in range(len(all_detected_bbox))]
@@ -404,10 +439,11 @@ if __name__ == '__main__':
     # checker = FrameChecker(model, video_path)
     # checker.process()
     batch_size = 1
-    train_dataset = BoundingBoxDataset(train_data_path, yolo_model=model, sequence_length=sequence_length)
+    train_dataset = BoundingBoxDataset(train_data_path, yolo_model=model, sequence_length=sequence_length,
+                                       default_seq_label='train_default_sequence_label.npz')
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     # val_dataset = BoundingBoxDataset(val_data_path, yolo_model=model, sequence_length=sequence_length)
     # val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     
-    # inspect_dataloader(train_loader)
+    inspect_dataloader(train_loader)

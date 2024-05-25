@@ -1,5 +1,11 @@
-# wdwyl_ros1
+# What drink would you like?
 
-### What (empty) drink would you like? in ROS 1 using Moveit for planning and YOLO for percepion
+Bottle sorting is a labourious task that involves:
 
-### hmmm what do you need here
+- Picking each bottle from from a mixed crate
+
+- Classify them by brand
+
+- Place them into respective crates
+
+Our team ideated an automated picking process 
