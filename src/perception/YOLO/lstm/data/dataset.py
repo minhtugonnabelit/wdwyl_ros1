@@ -29,6 +29,11 @@ class BoundingBoxDataset(Dataset):
 
     DATA_DIR = '/root/aifr/wdwyl_ros1/src/perception/YOLO/lstm/data/sequence_npy'
 
+    def __init__(self):
+        pass
+
+
+
     def __init__(self, videos_path, yolo_model, sequence_length):
         self.videos_path = videos_path
         self.videos = os.listdir(videos_path)
