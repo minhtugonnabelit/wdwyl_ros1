@@ -25,58 +25,63 @@ class BoundingBoxDataset(Dataset):
     Args:
         videos_path (str): The path to the videos directory
         sqeuence_length (int): The length of the sequence
+        default_seq_label (str): Name of the saved default sequence label file
     """
 
     DATA_DIR = '/root/aifr/wdwyl_ros1/src/perception/YOLO/lstm/data/sequence_npy'
 
-    def __init__(self):
-        pass
-
-
-
-    def __init__(self, videos_path, yolo_model, sequence_length):
+    def __init__(self, videos_path, yolo_model, sequence_length, default_seq_label):
         self.videos_path = videos_path
         self.videos = os.listdir(videos_path)
-        print("self.videos", self.videos)
         self.yolo_model = yolo_model
-
-        # self.npy_files = os.listdir(BoundingBoxDataset.DATA_DIR)
         self.sequence_length = sequence_length
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        self.default_seq_label = default_seq_label
         self.preprocess()
 
-        
+
     def preprocess(self):
         """
         Preprocess the videos to get the bounding boxes and save into a npy file
         Ignore the videos that have been processed
         """
 
-        # # Check which videos have been processed  
-        # unprocessed_videos = []
-        # for video in self.videos:
-        #     filename, _ = os.path.splitext(video)
-        #     npy_file_path = os.path.join(BoundingBoxDataset.DATA_DIR, f"sequence_{filename}.npy")
-        #     print("npy_file_path", npy_file_path)
-
-        #     if not os.path.isfile(npy_file_path):
-        #         unprocessed_videos.append(video)
+        # default_save_path = os.path.join(BoundingBoxDataset.DATA_DIR, 'default_sequence_label')
+        # default_save_path_npz = default_save_path + '.npz'  
+        save_path = os.path.join(BoundingBoxDataset.DATA_DIR, self.default_seq_label)    
 
         self.sequences = []
         self.labels = []
 
-        for video in self.videos:
-            video_path = os.path.join(self.videos_path, video)
 
-            checker = FrameChecker(self.yolo_model, video_path)
-            sequence_path, labels = checker.process()
-            sequence = np.load(sequence_path) # Load from npy, sequence is a list of list of 0 and 1
+        if not os.path.isfile(save_path):
+            for video in self.videos:
+                video_path = os.path.join(self.videos_path, video)
 
-            for bb_id, bbox in enumerate(sequence):
-                for i in range(len(bbox)-self.sequence_length+1):
-                    self.sequences.append(bbox[i:i+self.sequence_length])
-                    self.labels.append(labels[bb_id])
+                checker = FrameChecker(self.yolo_model, video_path)
+                sequence_path, labels = checker.process()
+                sequence = np.load(sequence_path) # Load from npy, sequence is a list of list of 0 and 1
+
+                for bb_id, bbox in enumerate(sequence):
+                    for i in range(len(bbox)-self.sequence_length+1):
+                        self.sequences.append(bbox[i:i+self.sequence_length])
+                        self.labels.append(labels[bb_id])
+
+            # Save the sequences and labels into (npz) file
+            # np.save(save_path, np.array([sequence, labels]))
+            np.savez(save_path, sequences=self.sequences, labels=self.labels)
+            
+        else:      
+            if not os.path.isfile(save_path):
+                raise FileNotFoundError(f"Error: default_sequence_label.npz does not exist.")
+            
+            # Load the default sequences and labels
+            # default = np.load(save_path, allow_pickle=True)
+
+            default = np.load(save_path)
+            self.sequences = default['sequences']
+            self.labels = default['labels']
 
 
     def __len__(self):
@@ -110,6 +115,7 @@ class FrameChecker:
         if not os.path.isfile(video_path):
             raise FileNotFoundError(f"Error: The video file {self.video_path} does not exist.")
         self.video_path = video_path
+
 
     def process(self):
         """
@@ -226,21 +232,11 @@ class FrameChecker:
         return valid_bbox
 
 
-    def fake_labeling_bbox(self, all_detected_bbox, threshold=0.8):
+    def fake_labeling_bbox(self, all_detected_bbox, threshold=0.7):
         """
         """
 
         valid_bbox = []
-
-        # filename = os.path.basename(self.video_path)
-        # video_name, _ = os.path.splitext(filename)
-        # save_path = os.path.join(FrameChecker.DATA_DIR, f'sequence_{video_name}.npy')  
-
-        # if not os.path.isfile(save_path):
-        #     return save_path
-
-        # If not yet saved into npy, process the video
-        # sequence = [[] for _ in range(len(all_detected_bbox))]
 
         cap = self.init_cap()
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -256,19 +252,6 @@ class FrameChecker:
                     break
                 
                 results = self.model(frame)[0]    
-
-                # all_detected_bbox_in_frame = []
-                # for id, d_bbox in enumerate(all_detected_bbox): # For each detected bbox
-
-                #     # Does that bbox appear in this frame?
- 
-                # assert len(all_detected_bbox) == len(all_detected_bbox_in_frame)
-
-                # for i in range(len(all_detected_bbox)):
-                #     if all_detected_bbox_in_frame[i]:
-                #         sequence[i].append(1)
-                #     else:
-                #         sequence[i].append(0)
 
                 for id_bbox, d_bbox in enumerate(all_detected_bbox):
 
@@ -332,8 +315,9 @@ class FrameChecker:
         filename = os.path.basename(self.video_path)
         video_name, _ = os.path.splitext(filename)
         save_path = os.path.join(FrameChecker.DATA_DIR, f'sequence_{video_name}.npy')  
-
-        if not os.path.isfile(save_path):
+    
+        # Check if the sequence has been saved into npy file
+        if os.path.isfile(save_path):
             return save_path
 
         # If not yet saved into npy, process the video
@@ -412,7 +396,7 @@ def inspect_dataloader(dataloader, num_batches=5):
 if __name__ == '__main__':
 
     model = YOLO(MODEL_PATH)
-    sequance_length = 20
+    sequence_length = 20
     data_path = '/root/aifr/wdwyl_ros1/videos'
     train_data_path = os.path.join(data_path, 'train')
     val_data_path = os.path.join(data_path, 'val')
@@ -420,10 +404,10 @@ if __name__ == '__main__':
     # checker = FrameChecker(model, video_path)
     # checker.process()
     batch_size = 1
-    train_dataset = BoundingBoxDataset(train_data_path, yolo_model=model, sequence_length=sequance_length)
+    train_dataset = BoundingBoxDataset(train_data_path, yolo_model=model, sequence_length=sequence_length)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    # val_dataset = BoundingBoxDataset(val_data_path, sequence_length=sequance_length)
+    # val_dataset = BoundingBoxDataset(val_data_path, yolo_model=model, sequence_length=sequence_length)
     # val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     
-    inspect_dataloader(train_loader)
+    # inspect_dataloader(train_loader)
