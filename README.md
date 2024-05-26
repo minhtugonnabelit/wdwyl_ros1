@@ -45,8 +45,17 @@ sudo apt-get install ros-$ROS_DISTRO-realsense2-camera
 
 Start the camera node
 ```shell
-roslaunch realsense2_camera rs_aligned_depth.launch```
+roslaunch realsense2_camera rs_aligned_depth.launch
 ```
+
+ROS topics:
+
+`/camera/color/image_raw`
+
+`/camera/aligned_depth_to_color/image_raw`
+
+
+
 ## Software
 
 ### ROS installation
