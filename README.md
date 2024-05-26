@@ -1,46 +1,47 @@
 # What drink would you like?
 
-## Overview
+## Problem Statement
 
 Bottle sorting is a labourious task that involves:
+- Detecting bottles inside a crate.
+- Picking bottles up, one by one.
+- Classify them by brand.
+- Place them into respective crates for classification.
 
-- Detect bottles inside a crate
-  
-- Picking each bottle from from a mixed crate
-
-- Classify them by brand
-
-- Place them into respective crates
-
-Our team ideated an automated picking process that will handle this pipeline in a fully autonomous manner. 
-We assume the that the crates of mixed bottles are moved by a conveyour belt.
-
-
+Given the assumption the that the crates of mixed bottles are moved by a conveyour belt, 
+our team ideated an automated picking process that will handle this pipeline in a fully autonomous manner. 
 
 ## Project Proposal
+We aim to solve the problems by a pipeline of three main components that happen in sequence:
+- Bottle Detection and Localisation of bottles in the create from the top-down angle. The detection is
+enhanced by an LSTM model to provide time-series information between different frame of detection
+- Manipulation for picking and facilitating view for classification.
+- Classification into different brands.
 
-For efficient bottle sorting, our initial step is to detect the presence of bottles within a crate. We employ YOLO v8, a state-of-the-art deep learning object detection system, tailored for high-speed and accurate performance. Our dataset, created manually, comprises a variety of images capturing bottles in mixed and challenging scenarios to mimic real-world conditions. This dataset is utilized to train the YOLO model, enabling it to identify different bottle types and their orientations within a crate with high precision.
+The software stack includes two top-level models, please follow each link for more details:
+- [`Perception`](perception/README.md)
+- [`Manipulation`](manipulation)
 
-Once bottles are detected, the next crucial step is their precise localization. To achieve this, we combine the detection results from the YOLO model with inputs from an RGB-D (Red, Green, Blue - Depth) camera. This setup allows us to ascertain the exact 3D positions of the bottles. The RGB component of the camera captures detailed color imagery of the crate's contents, while the depth sensor provides the distance information necessary to map each bottle in three-dimensional space. This integrated approach ensures accurate placement and retrieval of each bottle, which is critical for the subsequent sorting and classification tasks.
 
-
-
-This package is an integration of Moveit! planning framework and YOLO V8 model
-
+## Bring-up
 ### System setup requirement
+This package is an integration of Moveit! planning framework to control an UR3 robot and YOLO V8 model
 
 #### Hardware
 Beside the robot UR3e with OnRobot RG2 gripper, the system requires additional hardware modification and sensors setup perception system.
 Here is an image of an example setup around the robot on a custom trolley.
 
-![Example Image](image/GloryGloryMU.png)
+<p align="center">
+  <img width="50%" alt="Cover Image" src="image/cover_photo.jpg">
+</p>
 
 
 #### Moveit! and YOLO setup
 For planning module, a custom Moveit! configuration package are created with the consideration for the trolley and gripper with camera mounted on it. Using the setup assistance from Moveit! allow us to seemlessly account for the collision object relatively on robot body for collision avoidance feature of Moveit!. A custom URDF also need to be defined based on URDF available from each component description package (if available) and manually measured one. With this custom Moveit! configuration file we built and addtional workspace constraint we set, UR3e with RG2 gripper are able to consider the bottle picked along with the gripper for collision-free trajectory planning for bottle pick and place mission.
 
-<img src="image/setup_assistance.png" width="500" height="300">
-
+<p align="center">
+    <img width="60%" src="image/setup_assistance.png">
+</p>
 
 
 ##### Other requirement dependencies

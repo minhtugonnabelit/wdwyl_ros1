@@ -1,22 +1,13 @@
+# Perception Module
 
+### Detection and Localisation [link](detection/README.md)
 
-# Useful files
+### LSTM [link](lstm/README.md)
+LSTM model is developed to enhance the performance of detection
 
-`image_processing_before_training.py` image pre-processing module
+### Classification
+There are three attempts by each member to perform the task of bottle classification:
+- ResNet [link](brand_classification)
+- YOLOv8 with 4 classes [link](classification_2)
+- YOLOv8 with 3 classes [link](https://github.com/minhquanvu0604/bottle-classification-YOLOv8)
 
-`real_time_detect_using_model.py` module for YOLOv8 real-time detection with ROS
-
-`trained_model_test.py` module for YOLOv8 raw image detection
-
-`utility.py` config files/utility
-
-
-## Cho Tung
-
-`detect_bottle_by_comparing_image.py` a failed attempt to compare empty slots with occupied slots to roughly perform detection
-
-`detect_bottle_using_aimge_processing.py` a failed attempt to detect using traditional detection methods
-
-`test.py` inferring from raw image, using traditional methods
-
-`Compute_global_mean_and_std_dev.py`
