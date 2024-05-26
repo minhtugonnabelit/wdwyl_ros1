@@ -1,10 +1,10 @@
 # Build CNN based on ResNet9 architecture
 
 ### Data Augmentation
-### Random Flipping
-### Random Rotation
-### Colour Jittering
-### Normalising
+* Random Flipping
+* Random Rotation
+* Colour Jittering
+* Normalising
 
 ### Learning Rate Scheduling using ‘One Cycle Learning Rate Policy’
 Start with a low learning rate, gradually increasing it batch-by-batch to a high learning rate for about 30% of epochs, then gradually decreasing it to a very low value for remaining epochs
