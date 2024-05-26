@@ -23,11 +23,10 @@ The software stack includes two top-level models, please follow each link for mo
 - [`Manipulation`](manipulation)
 
 
-## Bring-up
-### System setup requirement
+# System setup requirement
 This package is an integration of Moveit! planning framework to control an UR3 robot and YOLO V8 model
 
-#### Hardware
+## Hardware
 Beside the robot UR3e with OnRobot RG2 gripper, the system requires additional hardware modification and sensors setup perception system.
 Here is an image of an example setup around the robot on a custom trolley.
 
@@ -36,20 +35,21 @@ Here is an image of an example setup around the robot on a custom trolley.
 </p>
 
 
-#### Moveit! and YOLO setup
-For planning module, a custom Moveit! configuration package are created with the consideration for the trolley and gripper with camera mounted on it. Using the setup assistance from Moveit! allow us to seemlessly account for the collision object relatively on robot body for collision avoidance feature of Moveit!. A custom URDF also need to be defined based on URDF available from each component description package (if available) and manually measured one. With this custom Moveit! configuration file we built and addtional workspace constraint we set, UR3e with RG2 gripper are able to consider the bottle picked along with the gripper for collision-free trajectory planning for bottle pick and place mission.
+### RealSense Camera
+Install realsense2_camera
+realsense2_camera is available as a debian package of ROS distribution. It can be installed by typing:
 
-<p align="center">
-    <img width="60%" src="image/setup_assistance.png">
-</p>
+```shell
+sudo apt-get install ros-$ROS_DISTRO-realsense2-camera
+```
 
+Start the camera node
+```shell
+roslaunch realsense2_camera rs_aligned_depth.launch```
+```
+## Software
 
-##### Other requirement dependencies
- - OpenCV
- - Ultralytics
- - pymodbus==2.5.3
-
-##### ROS installation
+### ROS installation
 For installation, please follow the instruction the snippet below 
 ```shell
 mkdir -p ~/ros_ws/src
@@ -87,5 +87,19 @@ To start the automated sorting example, run the line below
 ```shell
 rosrun wdwyl_ros1 ur3e_control_node.py
 ```
+
+### Moveit! and YOLO setup
+For planning module, a custom Moveit! configuration package are created with the consideration for the trolley and gripper with camera mounted on it. Using the setup assistance from Moveit! allow us to seemlessly account for the collision object relatively on robot body for collision avoidance feature of Moveit!. A custom URDF also need to be defined based on URDF available from each component description package (if available) and manually measured one. With this custom Moveit! configuration file we built and addtional workspace constraint we set, UR3e with RG2 gripper are able to consider the bottle picked along with the gripper for collision-free trajectory planning for bottle pick and place mission.
+
+<p align="center">
+    <img width="60%" src="image/setup_assistance.png">
+</p>
+
+
+### Other requirement dependencies
+ - OpenCV
+ - Ultralytics
+ - pymodbus==2.5.3
+
 
 

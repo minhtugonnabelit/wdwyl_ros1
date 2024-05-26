@@ -11,3 +11,6 @@ There are three attempts by each member to perform the task of bottle classifica
 - YOLOv8 with 4 classes [link](classification_2)
 - YOLOv8 with 3 classes [link](https://github.com/minhquanvu0604/bottle-classification-YOLOv8)
 
+<p align="center">
+  <img width="50%" alt="Classifcation 3" src="../image/confusion_matrix_classification_3.png">
+</p>
