@@ -111,4 +111,5 @@ For planning module, a custom Moveit! configuration package are created with the
  - pymodbus==2.5.3
 
 
-
+### Demonstration video
+[![Watch the video](https://img.youtube.com/vi/HZ6aLEw3RwA/maxresdefault.jpg)](https://youtu.be/HZ6aLEw3RwA)
