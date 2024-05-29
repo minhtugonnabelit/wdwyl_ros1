@@ -13,10 +13,8 @@ from ur3e_controller.collision_manager import CollisionManager
 from ur3e_controller.utility import *
 
 # Importing perception module
-from perception.YOLO.utility import *
-from perception.YOLO.localizer_model import RealSense
-from perception.YOLO.classifier_model import Classifier
-
+from perception.detection.localizer_model import RealSense
+from perception.detection.utility import *
 from copy import deepcopy
 
 # @TODO: Implementing loading scene with object detected
@@ -63,13 +61,10 @@ class MissionPlanner:
 
         # Initialize the perception module
         self.rs = RealSense()
-        self.classifier = Classifier()
 
         # Setup the scene with ur3e controller and homing
         self.setup_scene()
         self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
-        # Fully open the gripper to get a better view
-        # self.ur3e.open_gripper_to(width=1100, force=400)
 
         # TF2 listener and broadcaster to deal with the transformation
         self.tf_buffer = tf2_ros.Buffer()
@@ -187,11 +182,7 @@ class MissionPlanner:
                 self.ur3e.move_ee_along_axis(axis='x', delta=0.2)
                 rospy.sleep(1)
 
-                # bottle_pose = list_to_pose([0, 0, 0.23/2, 0, 0, 0])
-                # _, bot_id = self.collisions.add_cylinder(bottle_pose, object_type='cylinder', frame_id='end_point_link', height=0.24, radius=0.07)
-                # self.collisions.attach_object(eef_link='tool0', obj_id=bot_id, touch_links=['right_inner_finger','left_inner_finger'])
-
-                self.ur3e.go_to_goal_joint(BOTTLE_PLACEMENT["crown"])
+                self.ur3e.go_to_goal_joint(BOTTLE_PLACEMENT["heniken"])
                 rospy.sleep(1)
 
                 self.ur3e.move_ee_along_axis(axis='z', delta=-0.155)
