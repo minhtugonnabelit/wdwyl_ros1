@@ -22,6 +22,7 @@ class CollisionManager:
             'crate': 0,
             'cube': 0,
             "cone": 0,
+            'cylinder':0
         }
 
     def add_abitrary_box(self, pose: Pose, obj_ID: str, frame_id: str, size) -> tuple:
@@ -58,6 +59,20 @@ class CollisionManager:
 
         self.scene.add_box(obj_id, obj_pose, size=size)
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True), obj_id
+    
+    def add_cylinder(self, pose: Pose, object_type: str, frame_id: str, height:float, radius:float) -> tuple:
+        if object_type not in self._object_counter:
+            raise ValueError(f"Invalid object name: {object_type}")
+
+        self._object_counter[object_type] += 1
+        obj_id = f"{object_type}_{self._object_counter[object_type]:02d}"
+        obj_pose = PoseStamped()
+        obj_pose.header.frame_id = frame_id
+        obj_pose.pose = pose
+
+        self.scene.add_cylinder(obj_id, obj_pose, height, radius)
+        return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True), obj_id
+
 
     def add_cone_collision_object(self, pose: Pose, object_type: str, frame_id: str, size: tuple) -> tuple:
 
@@ -80,9 +95,9 @@ class CollisionManager:
         else:
             self.scene.remove_world_object(obj_id)
 
-    def attach_object(self, eef_link, obj_id, ):
+    def attach_object(self, eef_link, obj_id, touch_links=None ):
 
-        self.scene.attach_mesh(eef_link, obj_id, )
+        self.scene.attach_mesh(eef_link, obj_id, touch_links=touch_links)
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True)
 
     def detach_object(self, eef_link=None, obj_id=None):

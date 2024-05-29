@@ -31,11 +31,12 @@ CAM_OFFSET = list_to_pose([TX,
                            ENDPOINT_OFFSET,
                            0, 0, 0])
 
-AVAILABLE_MESHES = ["coke", "pepsi", "sprite", "fanta"]
 BOTTLE_PLACEMENT = {
-    "coke": list_to_pose([0, 0, 0, 0, 0, 0]),
-    "pale_ales": list_to_pose([0, 0, 0, 0, 0, 0]),
-    "heniken": list_to_pose([0, 0, 0, 0, 0, 0]),
+    "heniken": np.deg2rad([28, -124, -55, -91, 90, 28]).tolist(),
+    'crown': np.deg2rad([19, -121, -59, -90, 90, 19]).tolist(),
+    'northern':np.deg2rad([8, -123, -56, -91, 90, 8]).tolist(),
+    '4pine':np.deg2rad([-2, -128, -47, -94, 90, -2]).tolist()
+
 }
 
 CONTROL_RATE = 10  # Hz
@@ -68,7 +69,7 @@ class MissionPlanner:
         self.setup_scene()
         self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
         # Fully open the gripper to get a better view
-        self.ur3e.open_gripper_to(width=1100, force=400)
+        # self.ur3e.open_gripper_to(width=1100, force=400)
 
         # TF2 listener and broadcaster to deal with the transformation
         self.tf_buffer = tf2_ros.Buffer()
@@ -125,24 +126,19 @@ class MissionPlanner:
             if not done:
 
                 self.rs.set_Bottle_Flag(True)
+                rospy.sleep(3)
                 self.bottle_pose = self.rs.get_bottle_pos()
 
                 while self.bottle_pose is None:   # Wait until the bottle is detected
-
+                    rospy.loginfo("Bottle not detected!")
                     self.bottle_pose = self.rs.get_bottle_pos()
                     if not self.rs.get_circle_flag():
                         self.bottle_pose = None
-                        rospy.loginfo("No circle detected") 
-
-                # if self.rs.get_num_of_bottle() == 0:
-
-                #     rospy.loginfo("All bottles have been sorted!")
-                #     rospy.signal_shutdown("Finish sorting mission!")
+                        
 
                 if self.bottle_pose[-1] is None:
                     self.bottle_pose[-1] = 0.0
 
-                # rospy.loginfo(f"Bottle pose: {np.round(self.bottle_pose, 4)}")
                 rospy.loginfo(f"Bottle pose: {self.bottle_pose}")
 
 
@@ -170,17 +166,12 @@ class MissionPlanner:
 
                 # Close the gripper to 180 0.1mm wide to grip the bottle
                 rospy.sleep(1)
-                self.ur3e.open_gripper_to(width=180, force=200)
+                self.ur3e.open_gripper_to(width=180, force=400)
 
-                # Add mesh of the bottle into planning scene for collision avoidance
-                # self.collisions.add_collision_object(
-                #     obj_id="bottle", pose=bottle_pose_raw, object_type="bottle", frame_id="base_link_inertia")
-
-                # # Attach the bottle to the end effector of the robot in planning scene
-                # _, bottle_id = self.collisions.add_bottle(
-                #     initial_pose=bottle_pose_stamped.pose)
-                # self.collisions.attach_object(
-                #     eef_link=self.ur3e.get_end_effector_link(), obj_id=bottle_id)
+                # setup virtual cylinder for the bottle collision object
+                bottle_pose = list_to_pose([0, 0, 0.23/2, 0, 0, 0])
+                _, bot_id = self.collisions.add_cylinder(bottle_pose, object_type='cylinder', frame_id='end_point_link', height=0.24, radius=0.07)
+                self.collisions.attach_object(eef_link='tool0', obj_id=bot_id, touch_links=['right_inner_finger','left_inner_finger'])
 
                 # Move to the classify pose
                 rospy.sleep(1)
@@ -188,6 +179,26 @@ class MissionPlanner:
 
                 rospy.sleep(1)
                 self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
+
+
+                rospy.sleep(5)
+
+
+                self.ur3e.move_ee_along_axis(axis='x', delta=0.2)
+                rospy.sleep(1)
+
+                # bottle_pose = list_to_pose([0, 0, 0.23/2, 0, 0, 0])
+                # _, bot_id = self.collisions.add_cylinder(bottle_pose, object_type='cylinder', frame_id='end_point_link', height=0.24, radius=0.07)
+                # self.collisions.attach_object(eef_link='tool0', obj_id=bot_id, touch_links=['right_inner_finger','left_inner_finger'])
+
+                self.ur3e.go_to_goal_joint(BOTTLE_PLACEMENT["crown"])
+                rospy.sleep(1)
+
+                self.ur3e.move_ee_along_axis(axis='z', delta=-0.155)
+                self.ur3e.open_gripper_to(width=580, force=200)
+                rospy.sleep(1)
+
+                self.ur3e.move_ee_along_axis(axis='z', delta= 0.155)
 
                 done = True
 

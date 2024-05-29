@@ -124,14 +124,6 @@ class UR3e:
         constraints = Constraints()
         constraints.name = "elbow_up"
 
-        joint_constraint = JointConstraint()
-        joint_constraint.joint_name = "elbow_joint"
-        joint_constraint.position = -2.3562/2
-        joint_constraint.tolerance_above = 2.3562/2
-        joint_constraint.tolerance_below = 2.3562/2
-        joint_constraint.weight = 1
-        constraints.joint_constraints.append(joint_constraint)
-
         # joint_constraint_01 = JointConstraint()
         # joint_constraint_01.joint_name = "wrist_1_joint"
         # joint_constraint_01.position = -pi/2
@@ -140,13 +132,29 @@ class UR3e:
         # joint_constraint_01.weight = 1
         # constraints.joint_constraints.append(joint_constraint_01)
 
+        joint_constraint_04 = JointConstraint()
+        joint_constraint_04.joint_name = "shoulder_pan_joint"
+        joint_constraint_04.position = 2.0944
+        joint_constraint_04.tolerance_above = 2.1944
+        joint_constraint_04.tolerance_below = 2.1944
+        joint_constraint_04.weight = 1
+        constraints.joint_constraints.append(joint_constraint_04)
+
         joint_constraint_02 = JointConstraint()
         joint_constraint_02.joint_name = "shoulder_lift_joint"
         joint_constraint_02.position = -2.443
-        joint_constraint_02.tolerance_above = 1.746
-        joint_constraint_02.tolerance_below = 1.746
+        joint_constraint_02.tolerance_above = np.pi/4
+        joint_constraint_02.tolerance_below = np.pi/4
         joint_constraint_02.weight = 1
         constraints.joint_constraints.append(joint_constraint_02)
+
+        joint_constraint = JointConstraint()
+        joint_constraint.joint_name = "elbow_joint"
+        joint_constraint.position = -2.3562/2
+        joint_constraint.tolerance_above = 2.3562/2
+        joint_constraint.tolerance_below = 2.3562/2
+        joint_constraint.weight = 1
+        constraints.joint_constraints.append(joint_constraint)
 
         joint_constraint_03 = JointConstraint()
         joint_constraint_03.joint_name = "wrist_2_joint"
@@ -155,14 +163,6 @@ class UR3e:
         joint_constraint_03.tolerance_below = 0.5
         joint_constraint_03.weight = 1
         constraints.joint_constraints.append(joint_constraint_03)
-
-        joint_constraint_04 = JointConstraint()
-        joint_constraint_04.joint_name = "shoulder_pan_joint"
-        joint_constraint_04.position = 2.0944
-        joint_constraint_04.tolerance_above = 1.48353
-        joint_constraint_04.tolerance_below = 1.48353
-        joint_constraint_04.weight = 1
-        constraints.joint_constraints.append(joint_constraint_04)
 
         joint_constraint_05 = JointConstraint()
         joint_constraint_05.joint_name = "wrist_3_joint"
@@ -199,7 +199,7 @@ class UR3e:
         @param: joint_angle A list of floats
         @returns: bool True if successful by comparing the goal and actual joint angles
         """
-
+        print(joint_goal)
         if not isinstance(joint_goal, list):
             rospy.logerr("Invalid joint angle")
             return False
