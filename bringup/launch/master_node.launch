@@ -1,0 +1,6 @@
+<launch>
+
+    <!-- Start the master node -->
+    <node name="master_node" pkg="master_node" type="master_node" output="screen" />
+    
+</launch>

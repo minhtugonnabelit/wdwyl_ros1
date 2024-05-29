@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<robot name="ur3e_with_rg2"
+  xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <!-- Material definition -->
+  <material name="LightGrey">
+    <color rgba="0.7 0.7 0.7 1"/>
+  </material>
+
+  <material name="DarkGrey">
+    <color rgba="0.3 0.3 0.3 1"/>
+  </material>
+
+  <link name="trolley">
+    <visual>
+      <origin xyz="0 0 0.45" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.7 0.7 0.9"/>
+      </geometry>
+      <material name="LightGrey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.45" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.7 0.7 0.9"/>
+      </geometry>
+    </collision>
+    <inertia>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="50"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+    </inertia>
+  </link>
+
+  <link name="task_plate">
+    <visual>
+      <origin xyz="0 0 0.01" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.495 0.32 0.02"/>
+      </geometry>
+      <material name="DarkGrey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.01" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.5 0.32 0.02"/>
+      </geometry>
+    </collision>
+    <inertia>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+    </inertia>
+  </link>
+
+  <!-- virtual End point link for planning to construct endeffector endpoint, thus, no visual or collision aspect -->
+  <link name="end_point_link"/>
+
+  <xacro:include filename="$(find ur_description)/urdf/inc/ur3e_macro.xacro"/>
+  <xacro:ur3e_robot prefix=""/>
+
+  <xacro:include filename="$(find wdwyl_ros1)/urdf/onrobot_rg2_model_macro.xacro" />
+  <xacro:onrobot_rg2 prefix="" connected_to="tool0"/>
+
+  <joint name="task_plate_joint" type="fixed">
+    <parent link="trolley"/>
+    <child link="task_plate"/>
+    <origin xyz="0 -0.1 0.9" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="trolley_base_joint" type="fixed">
+    <parent link="trolley"/>
+    <child link="base_link"/>
+    <origin xyz="0 0.21 0.9" rpy="0 0 -3.14"/>
+  </joint>
+
+  <joint name="end_point_joint" type="fixed">
+    <parent link="tool0"/>
+    <child link="end_point_link"/>
+    <origin xyz="0 0 0.20" rpy="0 0 0"/>
+  </joint>
+
+</robot>

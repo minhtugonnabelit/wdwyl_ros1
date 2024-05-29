@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<launch>
+  <arg name="gui" default="True" />
+  <param name="robot_description" command="$(find xacro)/xacro $(find wdwyl_ros1)/urdf/ur3e_with_rg2.xacro" />
+  <param name="use_gui" value="$(arg gui)"/>
+  <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find wdwyl_ros1)/config/ur3e_with_rg2_rviz_config.rviz" required="true" />
+</launch>
