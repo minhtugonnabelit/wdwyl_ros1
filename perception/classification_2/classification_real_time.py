@@ -12,7 +12,7 @@ class Classification:
     def __init__(self):
         self.classification_flag = False
 
-        self.imageSub = rospy.Subscriber("/camera_classification/color/image_raw", Image, self.rgb_callback)
+        self.imageSub = rospy.Subscriber("/usb_cam/image_raw", Image, self.rgb_callback)
 
         self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/config/runs/classify/train/weights/best.pt'
 
