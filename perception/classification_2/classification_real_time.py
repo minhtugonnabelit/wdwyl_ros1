@@ -7,6 +7,7 @@ import numpy as np
 import pyrealsense2 as rs
 import copy
 import math
+from copy import deepcopy
 
 class Classification:
     def __init__(self):
@@ -22,6 +23,11 @@ class Classification:
 
         self.rgb_image = None
 
+        self.brand = None
+
+    def get_brand(self):
+        return self.brand
+
     def rgb_callback(self, data):
         # Convert the ROS Image message to a cv2 image
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -33,14 +39,12 @@ class Classification:
 
             probs = result[0].probs
             
-            # name = "Unidefined"
-            # # print(names_dict[probs.top1])
             if probs.top1 > 0.5:
-                name = names_dict[probs.top1]
+                name = deepcopy(names_dict[probs.top1])
             elif probs.top1 < 0.5:
                 name = "Unidefined"
-            # if probs.top1 < 0.5:
-            #     name = "Unidefined"
+
+            self.brand = deepcopy(name)
 
             text_position = (10, self.rgb_image.shape[0] - 10)
 
