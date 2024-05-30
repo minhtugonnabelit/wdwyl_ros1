@@ -13,6 +13,7 @@ class RealSense:
     def __init__(self):
         self.get_crate = False
         self.get_bottle = False
+        self.get_aruco = False
 
         self.bridge = CvBridge()
         self.imageSub = rospy.Subscriber("/camera/color/image_raw", Image, self.rgb_callback)
@@ -25,8 +26,7 @@ class RealSense:
         self.closest_depth = None
         self.last_closest_depth = None
 
-        self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/src/perception/detection/config/detect/detect/train/weights/best.pt'
-        
+        self.model_path = '/home/anh/workspace/test_image_contour/src/detect/detect/train/weights/best.pt'
 
         # Load the YOLO model
         self.model = YOLO(self.model_path)
@@ -58,6 +58,11 @@ class RealSense:
 
         self.circle_detected = False
 
+        self.aruco_position = None
+
+        self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
+        self.parameters = cv2.aruco.DetectorParameters()
+
     def set_Crate_Flag(self, flag: bool, wait=False):
         r"""
         Set the flag to enable the crate detection.
@@ -88,6 +93,9 @@ class RealSense:
     
     def get_circle_flag(self):
         return self.circle_detected
+
+    def get_aruco_position(self):
+        return self.aruco_position
 
     # Projecting a 2D point to a 3D image plane:
     def project_2D_to_3D(self, u, v, depth):
@@ -126,6 +134,11 @@ class RealSense:
             self.img_processing()
         
         elif (self.get_crate == False and self.get_bottle == True):
+            
+            width_in_pixels = None
+            height_in_pixels = None
+
+            lowest_corner = None
 
             # # Run YOLO model on the frame
             results = self.model(self.rgb_image)[0]
@@ -135,7 +148,6 @@ class RealSense:
                 if score > self.threshold:
                     self.num_of_bottle += 1
             # print(self.num_of_bottle)
-
             center_x_bottle = 0
             center_y_bottle = 0
 
@@ -148,6 +160,8 @@ class RealSense:
                 x1, y1, x2, y2, score, class_id = result
                 if score > self.threshold:
                     cv2.rectangle(self.rgb_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 4)
+                    # cv2.putText(self.rgb_image, results.names[int(class_id)].upper(), (int(x1), int(y1 - 10)),
+                    #             cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
                     
                     # ///////////////////////////////////////////////
                     # Calculate the center of the bounding box
@@ -186,6 +200,9 @@ class RealSense:
                         self.circle_detected = True
                     # ////////////////////////////////////////////////
 
+                    # spot_x = (int((center_x_bottle - min_x) / (width_in_pixels/5)))
+                    # spot_y = (int((center_y_bottle - min_y) / (height_in_pixels/4)))
+
                     # cv2.circle(self.rgb_image, (center_x_bottle, center_y_bottle), 5, (0, 255, 0), -1)  # Change the color and size as needed
                     # Make sure the depth image is already available and synced with the current RGB frame
                     if self.depth_image is not None:
@@ -195,9 +212,13 @@ class RealSense:
                             depth_meters = depth * self.depth_scale  # Convert depth to meters
                             
                             # Assuming self.depth_intrinsics is set correctly
+                            # real_world_coords = rs.rs2_deproject_pixel_to_point(self.depth_intrinsics, [center_x_bottle, center_y_bottle], depth_meters)
+                            # real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, depth_meters)
                             bottle_depth = self.closest_depth + 0.048
                             real_world_coords = self.project_2D_to_3D(center_x_bottle, center_y_bottle, bottle_depth)
                             # print(f"Object real-world coordinates: x={real_world_coords[0]}, y={real_world_coords[1]}, z={real_world_coords[2]}")
+                            # print(spot_x)
+                            # print(spot_y)
                             
                             # print(bottle_depth)
                             # print(self.circle_detected)
@@ -212,7 +233,13 @@ class RealSense:
                             # print(f"Object real-world coordinates: x={self.bottle_pos[0]}, y={self.bottle_pos[1]}, z={self.bottle_pos[2]}")
                     # /////////////////////////////////////////////
             print(f"Object real-world coordinates: x={self.bottle_pos[0]}, y={self.bottle_pos[1]}, z={self.bottle_pos[2]}")
+            print(self.circle_detected)
+            # print(self.closest_depth)
             cv2.circle(self.rgb_image, (nearest_x_bottle, nearest_y_bottle), 5, (0, 255, 0), -1)
+
+        elif (self.get_crate == False and self.get_bottle == False and self.get_aruco == True):
+            self.aruco_processing()
+            
         else:
             pass
 
@@ -327,4 +354,81 @@ class RealSense:
             cv2.circle(img, tuple(top_right), 5, (0, 0, 255), -1)
             cv2.circle(img, tuple(bottom_right), 5, (255, 255, 0), -1)
             cv2.circle(img, tuple(bottom_left), 5, (0, 255, 255), -1)
-        
+        def aruco_processing(self):
+        rospy.sleep(1.0)
+        img = self.rgb_image
+
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Detect ArUco markers:
+        markerCorners, markerIds, _= cv2.aruco.detectMarkers(gray, self.dictionary, parameters=self.parameters)
+
+        if markerIds is not None:
+            ########################
+            #This function is used to get the rotation matrix and translation matrix 
+            #for reference: https://docs.opencv.org/4.8.0/d9/d6a/group__aruco.html#ga3bc50d61fe4db7bce8d26d56b5a6428a
+            marker_size = 0.06          #replace with real marker size
+
+            fx = self.depth_intrinsics.fx       #focal length in x axis
+            fy = self.depth_intrinsics.fy      #focal length in y axis
+            cx = self.depth_intrinsics.ppx           #principal point x
+            cy = self.depth_intrinsics.ppy            #principal point y
+
+            camera_matrix = np.array([[fx, 0, cx],
+                                    [0, fy, cy],
+                                    [0, 0, 1]], dtype=np.float64)
+
+            
+            k1 = 0
+            k2 = 0
+            p1 = 0
+            p2 = 0
+            k3 = 0
+            
+            dist_coeffs = np.array([k1, k2, p1, p2, k3], dtype=np.float64)
+
+            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(markerCorners, marker_size, camera_matrix, dist_coeffs)
+            
+            self.translation = tvecs
+            self.rotation = rvecs
+            
+
+            #now use rvecs and tvecs for controller
+            ########################
+
+            cv2.aruco.drawDetectedMarkers(img, markerCorners, markerIds)
+
+            max_distance = 0
+            max_position = None
+            max_markerID = None
+
+            for i in range(len(markerIds)):
+                # Print the position of the marker in the camera coordinate system
+                position = tvecs[i][0]
+                # print(f"Marker ID: {markerIds[i][0]}, Position (x, y, z): {position}")
+
+                distance = np.linalg.norm(position)
+
+                if (distance > max_distance):
+                    max_distance = copy.deepcopy(distance)
+                    max_position = copy.deepcopy(position)
+                    max_markerID = copy.deepcopy(markerIds[i][0])
+
+                # print(f"Distance to Marker ID: {markerIds[i][0]}: {distance:.2f} meters")
+
+                # # Draw the position on the image
+                # cv2.putText(img, f"ID: {markerIds[i][0]} Pos: {position}",
+                #             (int(markerCorners[i][0][0][0]), int(markerCorners[i][0][0][1])),
+                #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2, cv2.LINE_AA)
+
+                # Example: Taking the depth value of the first detected marker's center
+                center_x = int((markerCorners[i][0][0][0] + markerCorners[i][0][2][0]) / 2)
+                center_y = int((markerCorners[i][0][0][1] + markerCorners[i][0][2][1]) / 2)
+
+                # Draw a circle at the center of the marker
+                cv2.circle(img, (center_x, center_y), 5, (0, 0, 255), -1)
+
+            self.aruco_position = max_position
+            print(f"Marker ID: {max_markerID}, Position (x, y, z): {position}")
+        else:
+            print("can not DETECT")
