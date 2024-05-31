@@ -15,14 +15,14 @@
     <visual>
       <origin xyz="0 0 0.45" rpy="0 0 0"/>
       <geometry>
-        <box size="0.7 0.7 0.9"/>
+        <box size="0.73 0.71 0.9"/>
       </geometry>
       <material name="LightGrey"/>
     </visual>
     <collision>
       <origin xyz="0 0 0.45" rpy="0 0 0"/>
       <geometry>
-        <box size="0.7 0.7 0.9"/>
+        <box size="0.73 0.71 0.9"/>
       </geometry>
     </collision>
     <inertia>

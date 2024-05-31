@@ -4,7 +4,7 @@ import rospy
 from moveit_commander import PlanningSceneInterface
 from geometry_msgs.msg import Pose, PoseStamped
 
-from ur3e_controller.utility import Bottle
+from ur3e_controller.utility import *
 
 
 class CollisionManager:
@@ -14,7 +14,7 @@ class CollisionManager:
 
     def __init__(self, scene: PlanningSceneInterface) -> None:
 
-        self.scene = scene
+        self._scene = scene
         self.bottles = []
 
         self._object_counter = {
@@ -25,13 +25,34 @@ class CollisionManager:
             'cylinder':0
         }
 
+    def add_crate_bound(self):
+        r"""
+        add a thin box above the crate to restraint the robot motion not to go downward too much
+        """
+
+        bound_pose = PoseStamped()
+        bound_pose.pose = list_to_pose(
+            [0.0, -0.36, -0.07, 0.0, 0.0, 0.0])
+        bound_pose.header.frame_id = "base_link"
+        bound_id = "bound"
+        self._scene.add_box(bound_id, bound_pose, size=(0.45, 0.35, 0.01))
+
+        return bound_id
+    
+    def remove_crate_bound(self, bound_id):
+        r"""
+        remove the thin box above the crate
+        """
+        if self._scene.get_objects(bound_id) is not None:
+            self._scene.remove_world_object(bound_id[0])
+
     def add_abitrary_box(self, pose: Pose, obj_ID: str, frame_id: str, size) -> tuple:
 
         obj_pose = PoseStamped()
         obj_pose.header.frame_id = frame_id
         obj_pose.pose = pose
 
-        self.scene.add_box(obj_ID, obj_pose, size=size)
+        self._scene.add_box(obj_ID, obj_pose, size=size)
 
         return self.wait_for_obj_state(obj_name=obj_ID, obj_is_known=True, obj_is_attached=False), obj_ID
 
@@ -42,7 +63,7 @@ class CollisionManager:
         obj_pose.pose = pose
 
         mesh_path = f"package://ur3e_controller/meshes/{object_type}.stl"
-        self.scene.add_mesh(obj_id, obj_pose, filename=mesh_path)
+        self._scene.add_mesh(obj_id, obj_pose, filename=mesh_path)
 
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True), obj_id
 
@@ -57,7 +78,7 @@ class CollisionManager:
         obj_pose.header.frame_id = frame_id
         obj_pose.pose = pose
 
-        self.scene.add_box(obj_id, obj_pose, size=size)
+        self._scene.add_box(obj_id, obj_pose, size=size)
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True), obj_id
     
     def add_cylinder(self, pose: Pose, object_type: str, frame_id: str, height:float, radius:float) -> tuple:
@@ -70,9 +91,8 @@ class CollisionManager:
         obj_pose.header.frame_id = frame_id
         obj_pose.pose = pose
 
-        self.scene.add_cylinder(obj_id, obj_pose, height, radius)
+        self._scene.add_cylinder(obj_id, obj_pose, height, radius)
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True), obj_id
-
 
     def add_cone_collision_object(self, pose: Pose, object_type: str, frame_id: str, size: tuple) -> tuple:
 
@@ -85,24 +105,24 @@ class CollisionManager:
         obj_pose.header.frame_id = frame_id
         obj_pose.pose = pose
 
-        self.scene.add_cone(obj_id, obj_pose, height=size[0], radius=size[1])
+        self._scene.add_cone(obj_id, obj_pose, height=size[0], radius=size[1])
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True), obj_id
 
     def remove_collision_object(self, obj_id=None) -> tuple:
 
         if obj_id is None:
-            self.scene.remove_world_object()
+            self._scene.remove_world_object()
         else:
-            self.scene.remove_world_object(obj_id)
+            self._scene.remove_world_object(obj_id)
 
     def attach_object(self, eef_link, obj_id, touch_links=None ):
 
-        self.scene.attach_mesh(eef_link, obj_id, touch_links=touch_links)
+        self._scene.attach_mesh(eef_link, obj_id, touch_links=touch_links)
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=True)
 
     def detach_object(self, eef_link=None, obj_id=None):
 
-        self.scene.remove_attached_object(link=eef_link, name=obj_id)
+        self._scene.remove_attached_object(link=eef_link, name=obj_id)
         if obj_id is not None:
             return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True, obj_is_attached=False)
         else:
@@ -114,10 +134,10 @@ class CollisionManager:
         seconds = rospy.get_time()
         while (seconds - start < timeout) and not rospy.is_shutdown():
 
-            attached_objects = self.scene.get_attached_objects([obj_name])
+            attached_objects = self._scene.get_attached_objects([obj_name])
             is_attached = len(attached_objects.keys()) > 0
 
-            is_known = obj_name in self.scene.get_known_object_names()
+            is_known = obj_name in self._scene.get_known_object_names()
 
             if (obj_is_attached == is_attached) and (obj_is_known == is_known):
                 return True

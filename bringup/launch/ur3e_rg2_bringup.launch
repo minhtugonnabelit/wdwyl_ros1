@@ -37,6 +37,9 @@
   <!-- Load and initialize Realsense driver -->
   <include file="$(find realsense2_camera)/launch/rs_aligned_depth.launch" />
 
+  <!-- Load and initialize Logitech usb-cam driver -->
+  <include file="$(find usb_cam)/launch/usb_cam-test.launch" />
+
   <!-- Load and initialize Moveit! -->
   <include file="$(find ur3e_rg2_moveit_config)/launch/moveit_rviz.launch" />
 

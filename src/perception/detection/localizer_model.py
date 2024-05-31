@@ -26,7 +26,7 @@ class RealSense:
         self.closest_depth = None
         self.last_closest_depth = None
 
-        self.model_path = '/home/anh/workspace/test_image_contour/src/detect/detect/train/weights/best.pt'
+        self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/src/perception/classification/runs/classify/train/weights/best.pt'
 
         # Load the YOLO model
         self.model = YOLO(self.model_path)
@@ -354,7 +354,9 @@ class RealSense:
             cv2.circle(img, tuple(top_right), 5, (0, 0, 255), -1)
             cv2.circle(img, tuple(bottom_right), 5, (255, 255, 0), -1)
             cv2.circle(img, tuple(bottom_left), 5, (0, 255, 255), -1)
-        def aruco_processing(self):
+
+    def aruco_processing(self):
+
         rospy.sleep(1.0)
         img = self.rgb_image
 
@@ -378,7 +380,6 @@ class RealSense:
                                     [0, fy, cy],
                                     [0, 0, 1]], dtype=np.float64)
 
-            
             k1 = 0
             k2 = 0
             p1 = 0

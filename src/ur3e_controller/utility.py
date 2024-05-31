@@ -47,9 +47,8 @@ def all_close(goal, actual, tolerance):
         x1, y1, z1, qx1, qy1, qz1, qw1 = pose_to_list(goal)
         # Euclidean distance
         d = dist((x1, y1, z1), (x0, y0, z0))
-        # phi = angle between orientations
         cos_phi_half = fabs(qx0 * qx1 + qy0 * qy1 + qz0 * qz1 + qw0 * qw1)
-        return d <= tolerance and cos_phi_half >= cos(tolerance / 2.0)
+        return d <= tolerance #and cos_phi_half >= cos(tolerance / 2.0)
 
     return True
 

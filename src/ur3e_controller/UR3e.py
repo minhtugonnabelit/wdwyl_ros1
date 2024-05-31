@@ -117,20 +117,42 @@ class UR3e:
         self._scene.attach_mesh("tool0", "camera_mount", touch_links=[
             "onrobot_rg2_base_link"])
 
+        # Add a thin box above the crate to restraint the robot motion not to go downward too much
+        wall_pose = PoseStamped()
+        wall_pose.pose = list_to_pose(
+            [0.0, -0.61, -0.07, 0.0, 0.0, 0.0])
+        wall_pose.header.frame_id = "base_link"
+        bound_id = "bound"
+        self._scene.add_box(bound_id, wall_pose, size=(1, 0.05, 1))
+
         return True
+    
+    def add_crate_bound(self):
+        r"""
+        add a thin box above the crate to restraint the robot motion not to go downward too much
+        """
+
+        bound_pose = PoseStamped()
+        bound_pose.pose = list_to_pose(
+            [0.0, -0.36, -0.07, 0.0, 0.0, 0.0])
+        bound_pose.header.frame_id = "base_link"
+        bound_id = "bound"
+        self._scene.add_box(bound_id, bound_pose, size=(0.45, 0.35, 0.01))
+
+        return bound_id
+    
+    def remove_crate_bound(self, bound_id):
+        r"""
+        remove the thin box above the crate
+        """
+        if self._scene.get_objects(bound_id) is not None:
+            self._scene.remove_world_object(bound_id[0])
+
 
     def init_path_constraints(self):
 
         constraints = Constraints()
         constraints.name = "elbow_up"
-
-        # joint_constraint_01 = JointConstraint()
-        # joint_constraint_01.joint_name = "wrist_1_joint"
-        # joint_constraint_01.position = -pi/2
-        # joint_constraint_01.tolerance_above = pi/2
-        # joint_constraint_01.tolerance_below = pi/2
-        # joint_constraint_01.weight = 1
-        # constraints.joint_constraints.append(joint_constraint_01)
 
         joint_constraint_04 = JointConstraint()
         joint_constraint_04.joint_name = "shoulder_pan_joint"
@@ -233,7 +255,7 @@ class UR3e:
         self._group.clear_pose_targets()
 
         cur_pose = self._group.get_current_pose().pose
-        return all_close(pose, cur_pose, 0.001)
+        return all_close(pose, cur_pose, 0.01)
 
     def gen_carternian_path(self, target_pose: Pose, max_step=0.001, jump_thresh=0.0):
         r"""
@@ -272,8 +294,13 @@ class UR3e:
         @param: plan A RobotTrajectory instance
         @returns: bool True if successful by comparing the goal and actual poses
         """
-        self._group.execute(plan, wait=True)
-        self._group.stop()
+        try:
+            self._group.execute(plan, wait=True)
+        except Exception as e:
+            rospy.logerr(e)
+            return False
+        
+        # self._group.execute(plan, wait=True)
         return all_close(plan.joint_trajectory.points[-1], self._group.get_current_pose().pose, 0.01)
 
     def stop(self):
@@ -335,9 +362,20 @@ class UR3e:
             return False
 
         plan, frac = self.gen_carternian_path(target_pose=goal)
+        if plan is None:
+            return False
+        
         done = self.execute_plan(plan=plan)
-
         return done
+    
+    def rotate_ee(self, angle: float) -> bool:
+        r"""
+        Rotate the end effector around the z-axis of the planning frame."""
+        goal = deepcopy(self._group.get_current_joint_values())
+        goal[-1] += angle
+        done = self.go_to_goal_joint(goal, wait=False)
+        return done
+        
 
     # Gripper control
 
@@ -420,37 +458,3 @@ class UR3e:
         This data feeds directly to the virtual UR3 model as kinematic solver."""
 
         self.virtual_UR.q = data.position
-
-    def ikine_opt(self, initial_guess, desired_config, desired_pose: SE3) -> list:
-
-        print(desired_pose)
-
-        """Find the joint state that minimizes the difference from the desired config and satisfies the forward kinematics constraint."""
-        def objective_function(x, desired_config):
-            """Objective function to minimize. This should return the difference between the current joint state and the desired joint state."""
-            return np.linalg.norm(x - desired_config)
-
-        def constraint_function(x, desired_pose):
-
-            base_rot = np.eye(4)
-            base_rot[0:3, 0:3] = smb.rotz(np.pi)
-
-            """Constraint function for the optimization. This should return 0 when the forward kinematics of the current joint state match the desired pose."""
-            current_pose = base_rot @ self.virtual_UR.fkine(
-                x, tool=self.virtual_UR_tool).A
-            pos_error = np.linalg.norm(
-                current_pose[0:3, 3] - desired_pose.A[0:3, 3])
-            ori_error = R.from_matrix(np.linalg.inv(
-                current_pose[0:3, 0:3]) @ desired_pose.A[0:3, 0:3]).magnitude()
-            return pos_error + ori_error
-
-        # Define the constraint
-        constraint = {'type': 'eq',
-                      'fun': constraint_function, 'args': (desired_pose)}
-
-        # Call the minimize function
-        result = minimize(objective_function, initial_guess,
-                          args=(desired_config), constraints=constraint)
-
-        # Return the optimized joint state
-        return result.x

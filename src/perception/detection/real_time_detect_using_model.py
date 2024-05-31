@@ -1,4 +1,4 @@
-import rospy
+import rospy, rospkg
 import cv2
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -26,7 +26,7 @@ class RealSense:
         self.closest_depth = None
         self.last_closest_depth = None
 
-        self.model_path = '/home/anh/workspace/test_image_contour/src/detect/detect/train/weights/best.pt'
+        self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/src/perception/classification/runs/classify/train/weights/best.pt'
 
         # Load the YOLO model
         self.model = YOLO(self.model_path)
@@ -354,7 +354,6 @@ class RealSense:
             cv2.circle(img, tuple(bottom_left), 5, (0, 255, 255), -1)
     
     def aruco_processing(self):
-        rospy.sleep(1.0)
         img = self.rgb_image
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
