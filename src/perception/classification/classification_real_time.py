@@ -59,18 +59,21 @@ class Classification:
             # Display the image
             cv2.imshow('Result', self.rgb_image)
             cv2.waitKey(1)
+            
+        else:
+            pass
 
-if __name__ == '__main__':
-    # Initialize the ROS Node
-    rospy.init_node('realsense_yolo', anonymous=True, log_level=1)
+# if __name__ == '__main__':
+#     # Initialize the ROS Node
+#     rospy.init_node('realsense_yolo', anonymous=True, log_level=1)
     
-    # Create the RealSense object
-    rs = Classification()
+#     # Create the RealSense object
+#     rs = Classification()
 
-    rs.classification_flag = True
+#     rs.classification_flag = True
 
-    # Spin to keep the script for exiting
-    rospy.spin()
+#     # Spin to keep the script for exiting
+#     rospy.spin()
 
-    # Destroy all OpenCV windows
-    cv2.destroyAllWindows()
+#     # Destroy all OpenCV windows
+#     cv2.destroyAllWindows()

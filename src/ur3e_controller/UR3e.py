@@ -24,8 +24,8 @@ import numpy as np
 
 
 # Constants variables
-POS_TOL = 0.01  # m
-ORI_TOL = 0.01  # m
+POS_TOL = 0.001  # m
+ORI_TOL = 0.001  # m
 MAX_VEL_SCALE_FACTOR = 0.05
 MAX_ACC_SCALE_FACTOR = 0.05
 GRIPPER_OPEN = 500  # 0.1mm
@@ -94,15 +94,14 @@ class UR3e:
         self._group.set_planning_time(10)
         self._group.set_num_planning_attempts(5)
         self._group.set_goal_position_tolerance(POS_TOL)
-        self._group.set_goal_orientation_tolerance(ORI_TOL)
+        self._group.set_goal_joint_tolerance(POS_TOL)
         self._group.set_max_velocity_scaling_factor(MAX_VEL_SCALE_FACTOR)
         self._group.set_max_acceleration_scaling_factor(MAX_ACC_SCALE_FACTOR)
         self.init_path_constraints()
 
         # Add a small fragment piece as gripper cable node
         cable_cap_pose = PoseStamped()
-        cable_cap_pose.pose = list_to_pose(
-            [-0.045, -0.01, 0.01, 1.57, 0, 1.57])
+        cable_cap_pose.pose = list_to_pose([-0.045, -0.01, 0.01, 1.57, 0, 1.57])
         cable_cap_pose.header.frame_id = "tool0"
         self._scene.add_cylinder("cable_cap", cable_cap_pose, 0.02, 0.01)
         self._scene.attach_mesh("tool0", "cable_cap", touch_links=[
@@ -110,8 +109,7 @@ class UR3e:
 
         # Add box to wrap around the camera mounter
         camera_mount_pose = PoseStamped()
-        camera_mount_pose.pose = list_to_pose(
-            [0.0, -0.0455, 0.0732, 0.0, 0.0, 0.0])
+        camera_mount_pose.pose = list_to_pose( [0.0, -0.0455, 0.0732, 0.0, 0.0, 0.0])
         camera_mount_pose.header.frame_id = "tool0"
         self._scene.add_box("camera_mount", camera_mount_pose, size=(0.08, 0.1, 0.035))
         self._scene.attach_mesh("tool0", "camera_mount", touch_links=[
@@ -119,11 +117,17 @@ class UR3e:
 
         # Add a thin box above the crate to restraint the robot motion not to go downward too much
         wall_pose = PoseStamped()
-        wall_pose.pose = list_to_pose(
-            [0.0, -0.61, -0.07, 0.0, 0.0, 0.0])
+        wall_pose.pose = list_to_pose([0.0, -0.61, -0.07, 0.0, 0.0, 0.0])
         wall_pose.header.frame_id = "base_link"
-        bound_id = "bound"
-        self._scene.add_box(bound_id, wall_pose, size=(1, 0.05, 1))
+        bound_id = "wall"
+        self._scene.add_box(bound_id, wall_pose, size=(2, 0.01, 2))
+
+        # Add a ceiling to avoid robot with bottle to go overhead
+        ceilling_pose = PoseStamped()
+        ceilling_pose.pose = list_to_pose([0.0, 0.0, 0.7, 0.0, 0.0, 0.0])
+        ceilling_pose.header.frame_id = "base_link"
+        ceilling_id = "ceilling"
+        self._scene.add_box(ceilling_id, ceilling_pose, size=(2, 2, 0.01))
 
         return True
     
@@ -133,8 +137,7 @@ class UR3e:
         """
 
         bound_pose = PoseStamped()
-        bound_pose.pose = list_to_pose(
-            [0.0, -0.36, -0.07, 0.0, 0.0, 0.0])
+        bound_pose.pose = list_to_pose([0.0, -0.36, -0.07, 0.0, 0.0, 0.0])
         bound_pose.header.frame_id = "base_link"
         bound_id = "bound"
         self._scene.add_box(bound_id, bound_pose, size=(0.45, 0.35, 0.01))
@@ -221,7 +224,6 @@ class UR3e:
         @param: joint_angle A list of floats
         @returns: bool True if successful by comparing the goal and actual joint angles
         """
-        print(joint_goal)
         if not isinstance(joint_goal, list):
             rospy.logerr("Invalid joint angle")
             return False
@@ -284,6 +286,18 @@ class UR3e:
                 rospy.logerr("Failed to find a plan")
                 return None, 0.0
 
+            # check if the plan is valid with timestamp duplication
+        path = []
+        for i in range(len(plan.joint_trajectory.points)):
+            if i == 0:
+                continue
+
+            time_diff = plan.joint_trajectory.points[i].time_from_start.secs - \
+                plan.joint_trajectory.points[i-1].time_from_start.secs
+            print(time_diff)
+            if not plan.joint_trajectory.points[i].time_from_start.secs == plan.joint_trajectory.points[i].time_from_start.secs:
+                path.append(plan.joint_trajectory.points[i])
+                
         rospy.loginfo(
             f"Fraction planned: {fraction}; Fix itteration {fix_itterations}")
         return plan, fraction
@@ -295,7 +309,8 @@ class UR3e:
         @returns: bool True if successful by comparing the goal and actual poses
         """
         try:
-            self._group.execute(plan, wait=True)
+            result = self._group.execute(plan, wait=True)
+            print(result)
         except Exception as e:
             rospy.logerr(e)
             return False
@@ -315,30 +330,6 @@ class UR3e:
 
         self._group.plan()
         joint_goal = self._group.get_named_target_values(name)
-        cur_joint = self._group.get_current_joint_values()
-        return all_close(joint_goal, cur_joint, 0.001)
-
-    def home(self):
-        r"""
-        Move the robot to the home position.
-        """
-
-        self._group.set_named_target("home")
-        self._group.go(wait=True)
-        joint_goal = self._group.get_named_target_values("home")
-
-        cur_joint = self._group.get_current_joint_values()
-        return all_close(joint_goal, cur_joint, 0.001)
-
-    def move_to_hang(self):
-        r"""
-        Move the robot to the hang position.
-        """
-
-        self._group.set_named_target("home_back_side")
-        self._group.go(wait=True)
-        joint_goal = self._group.get_named_target_values("home_back_side")
-
         cur_joint = self._group.get_current_joint_values()
         return all_close(joint_goal, cur_joint, 0.001)
 
@@ -381,12 +372,15 @@ class UR3e:
 
     def open_gripper(self, force=None):
         self._gripper.open(force)
+        rospy.sleep(1)
 
     def close_gripper(self, force=None):
         self._gripper.close(force)
+        rospy.sleep(1)
 
     def open_gripper_to(self, width, force=None):
         self._gripper.open_to(width, force)
+        rospy.sleep(1)
 
     # Getters
 

@@ -61,7 +61,7 @@ def list_to_pose(pose: list) -> Pose:
     p.position.z = pose[2]
 
     ori_in_quat = tf.transformations.quaternion_from_euler(
-        pose[3], pose[4], pose[5], axes='sxyz')
+        pose[3], pose[4], pose[5], axes='rxyz')
     p.orientation.x = ori_in_quat[0]
     p.orientation.y = ori_in_quat[1]
     p.orientation.z = ori_in_quat[2]

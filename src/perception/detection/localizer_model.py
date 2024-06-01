@@ -26,7 +26,7 @@ class RealSense:
         self.closest_depth = None
         self.last_closest_depth = None
 
-        self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/src/perception/classification/runs/classify/train/weights/best.pt'
+        self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/src/perception/detection/config/detect/detect/train/weights/best.pt'
 
         # Load the YOLO model
         self.model = YOLO(self.model_path)

@@ -26,7 +26,7 @@ class RealSense:
         self.closest_depth = None
         self.last_closest_depth = None
 
-        self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/src/perception/classification/runs/classify/train/weights/best.pt'
+        self.model_path = rospkg.RosPack().get_path('wdwyl_ros1') + '/src/perception/detection/config/detect/detect/train/weights/best.pt'
 
         # Load the YOLO model
         self.model = YOLO(self.model_path)
@@ -111,8 +111,8 @@ class RealSense:
         # Convert the ROS Image message to a cv2 image
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
-        brightness_increment = 50
-        self.rgb_image = cv2.add(self.rgb_image, (brightness_increment, brightness_increment, brightness_increment, 0))
+        # brightness_increment = 50
+        # self.rgb_image = cv2.add(self.rgb_image, (brightness_increment, brightness_increment, brightness_increment, 0))
 
         if (self.get_crate == True and self.get_bottle == False and self.get_aruco == False):
             self.img_processing()
@@ -443,8 +443,8 @@ if __name__ == '__main__':
     # rs.get_crate = True
 
     rs.get_bottle = False
-    rs.get_crate = False
-    rs.get_aruco = True
+    rs.get_crate = True
+    rs.get_aruco = False
 
     # Spin to keep the script for exiting
     rospy.spin()

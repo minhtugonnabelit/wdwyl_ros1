@@ -8,6 +8,9 @@
         "/home/anh/workspace/rs2/devel/lib/python3/dist-packages",
         "/home/anh/workspace/robotic_studio1_ws/devel/lib/python3/dist-packages",
         "/opt/ros/noetic/lib/python3/dist-packages",
-        "./manipulation/src"
+        "./manipulation/src",
+        "./src",
+        "./src",
+        "./src"
     ]
 }
