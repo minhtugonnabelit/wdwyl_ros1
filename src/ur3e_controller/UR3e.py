@@ -257,12 +257,11 @@ class UR3e:
         self._group.clear_pose_targets()
 
         cur_pose = self._group.get_current_pose().pose
-        return all_close(pose, cur_pose, 0.01)
+        return all_close(pose, cur_pose, 0.001)
 
     def gen_carternian_path(self, target_pose: Pose, max_step=0.001, jump_thresh=0.0):
         r"""
         Generate a cartesian path as a straight line to a desired pose .
-        @param: waypoints A list of Pose instances
         @returns: RobotTrajectory instance for the cartesian path
         """
         current_pose = self._group.get_current_pose().pose
