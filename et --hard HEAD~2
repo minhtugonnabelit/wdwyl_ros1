@@ -1,0 +1,560 @@
+[33mcommit 6368e58ee54e3dbd897a2b4bf740bb4347b4d845[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Sun May 26 19:55:57 2024 +1000
+
+    resnet 152
+
+[33mcommit a112f1626eb19cfae3cee4e4cac07f2bcd915219[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Sun May 26 19:51:08 2024 +1000
+
+    resnet 152
+
+[33mcommit d450455fdc11aa8adead088fa8a9680dce04c176[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Sun May 26 18:48:11 2024 +1000
+
+    update
+
+[33mcommit 93368496ad84b18f20e3db7df1e2506c54edb5b7[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Sun May 26 18:45:50 2024 +1000
+
+    update
+
+[33mcommit 2838daf93d97f90eb97d222d98857a4df4664ff1[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Sun May 26 18:33:37 2024 +1000
+
+    add readme for modules
+
+[33mcommit b20e84f616f2bc55ac5f43c1b792be3c31fe767c[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Sun May 26 17:35:04 2024 +1000
+
+    restructure
+
+[33mcommit b25d9dfe78f7917dea7d7e9b103035deaa4032cd[m
+Author: Anh Tung Nguyen <125330698+anhtungnguyen@users.noreply.github.com>
+Date:   Sun May 26 03:40:10 2024 +1000
+
+    Update README.md
+
+[33mcommit 138ce74e2070942ed31ae876b3cd009d6b8aeb15[m
+Author: Anh Tung Nguyen <125330698+anhtungnguyen@users.noreply.github.com>
+Date:   Sun May 26 03:39:39 2024 +1000
+
+    Add files via upload
+
+[33mcommit ffcc3c94669eb304d5bc65a5115f857e3bc51148[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Sun May 26 02:04:56 2024 +1000
+
+    added setup assistance
+
+[33mcommit 838841ae4bfa0485b6a9182ed12e38ad09fbb03f[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Sun May 26 02:01:19 2024 +1000
+
+    added setup assistance
+
+[33mcommit 88cdcc78d77865ef9249422e008b1bc2eafaf6c7[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Sun May 26 01:54:31 2024 +1000
+
+    Update README.md
+
+[33mcommit 24d72495b66aa358bcb90de041cf349b8aaec375[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Sun May 26 01:52:02 2024 +1000
+
+    Update README.md
+
+[33mcommit b270de9ea18ce580a41619bf52525ae185302324[m
+Author: Anh Tung Nguyen <125330698+anhtungnguyen@users.noreply.github.com>
+Date:   Sun May 26 00:24:37 2024 +1000
+
+    Update README.md
+
+[33mcommit c2e2ea5b523fda0e2ddb28514341bbf65af428cd[m
+Author: Anh Tung Nguyen <125330698+anhtungnguyen@users.noreply.github.com>
+Date:   Sun May 26 00:19:32 2024 +1000
+
+    Update README.md
+
+[33mcommit b24c432bc3cdd0c0669060ff87ad23ef98ac7b45[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Sat May 25 23:53:26 2024 +1000
+
+    printing debugging for datasetclass
+
+[33mcommit 6d97acd110d2140ef29ea80995928cca3a4b78ac[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Sat May 25 22:21:28 2024 +1000
+
+    lstm
+
+[33mcommit e0a85ae3a0200d83d75000370b3c186e858b76a2[m
+Author: Quan Vu <quanvu0604@gmail.com>
+Date:   Sat May 25 13:43:58 2024 +1000
+
+    update new constructor
+
+[33mcommit 620e1b93756c19fafde4aae7d0b45fd76be19c4f[m
+Author: Anh Minh Tu <106978614+minhtugonnabelit@users.noreply.github.com>
+Date:   Fri May 24 22:25:03 2024 +1000
+
+    Update README.md
+
+[33mcommit c1cc70a6af8a2c29048de193ffa39c74b87f82b3[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Fri May 24 19:01:15 2024 +1000
+
+    got training data
+
+[33mcommit ab900224203b9d7c6f6ee87df8cd2b9748dc495e[m
+Merge: faa2cb7 74ad813
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Fri May 24 16:50:05 2024 +1000
+
+    Merge branch 'main' of github.com:minhtugonnabelit/wdwyl_ros1
+
+[33mcommit faa2cb792ee6c6e07e17c424bd7b251fa2827c70[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Fri May 24 16:47:05 2024 +1000
+
+    update
+
+[33mcommit 74ad8137b4c4c28d7fa8918595e9d5ba1d51f102[m
+Author: Quan Vu <quanvu0604@gmail.com>
+Date:   Fri May 24 06:16:45 2024 +1000
+
+    update
+
+[33mcommit 628b9a4063be9f6817f64347889d91cbd1cae1b6[m
+Author: Quan Vu <quanvu0604@gmail.com>
+Date:   Fri May 24 05:58:25 2024 +1000
+
+    add data labelling and dataset for lstm
+
+[33mcommit 7a6990daa0a226ea6c7a335c74cb387aeacda664[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Fri May 24 00:34:52 2024 +1000
+
+    lstm update
+
+[33mcommit a748c43688e94010a7e92252dab4c04c59c13a91[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Thu May 23 23:10:08 2024 +1000
+
+    git ignure
+
+[33mcommit d2533775a92b9bf3ce7ae0d5bc7ff0a989363891[m
+Author: MinhQuanVu <quanvu0604@gmail.com>
+Date:   Thu May 23 23:09:04 2024 +1000
+
+    lstm
+
+[33mcommit e47cca130ac30d6e26ce6a38d5d1840d4f247fd3[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Thu May 16 23:13:40 2024 +1000
+
+    Added discreted step to elevate botle without crate collision
+
+[33mcommit c7b80aaf737d59b59e7541ff85476c09062d45cd[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Thu May 16 16:42:38 2024 +1000
+
+    classification
+
+[33mcommit d493d92b7278916c0af254be22a836eb20d08f73[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sun May 12 17:42:20 2024 +1000
+
+    Updated function to integrate classificatoin
+
+[33mcommit afe830b6bed096558eea6f21268ffa5ed069a62a[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sat May 11 13:06:02 2024 +1000
+
+    Generated Overall launch file
+
+[33mcommit 80601754b86dd19e51194f011e2a07aa92ed39c5[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sat May 11 13:03:06 2024 +1000
+
+    Generated Overall launch file
+
+[33mcommit 32310c842e7a94886365fc26995936607acdc4d3[m
+Merge: af2ffb1 ce1e9ea
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sat May 11 12:51:17 2024 +1000
+
+    Merge branch 'main' of github.com:minhtugonnabelit/wdwyl_ros1 into main
+
+[33mcommit af2ffb1d0adabe58a6bb1acec449302cfbe43cd3[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sat May 11 12:51:03 2024 +1000
+
+    demo updated
+
+[33mcommit ce1e9ea8d90d8a9740207d207953f8e2f19cc180[m
+Author: selimon2000 <selimon.s@outlook.com>
+Date:   Fri May 10 17:26:09 2024 +1000
+
+    Changed File Name
+
+[33mcommit 26689ac9af215da8c6a57a7aa8fa62b127bc4c5f[m
+Author: selimon2000 <selimon.s@outlook.com>
+Date:   Fri May 10 17:22:56 2024 +1000
+
+    New Model for Image Classification (Brand)
+
+[33mcommit 8f66e30d297e371a6ae59bbc026dc43eb6e56dfb[m
+Merge: f1439c1 8ef16cb
+Author: selimon2000 <selimon.s@outlook.com>
+Date:   Fri May 10 14:16:36 2024 +1000
+
+    Merge branch 'main' of github.com:minhtugonnabelit/wdwyl_ros1 into main
+
+[33mcommit f1439c1b85c5a1c7bc9c6870cb2ea24e78d90a90[m
+Author: selimon2000 <selimon.s@outlook.com>
+Date:   Fri May 10 14:16:11 2024 +1000
+
+    CNN resnet model
+
+[33mcommit a242fef45b5427ce2d79c0afee6fd54b86834eda[m
+Author: selimon2000 <selimon.s@outlook.com>
+Date:   Fri May 10 12:21:21 2024 +1000
+
+    Changed Files Around
+
+[33mcommit 8ef16cb46245715f7d22203075c5566c3a664155[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Wed May 8 18:35:51 2024 +1000
+
+    First integration test for localization and control module
+
+[33mcommit fd0c91ea9ac6fe0bf09d9075a36d528a04283e63[m
+Merge: 25bdd55 01be397
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Tue May 7 22:28:48 2024 +1000
+
+    Merge branch 'main' of github.com:minhtugonnabelit/wdwyl_ros1 into main
+
+[33mcommit 25bdd551ce906fe68ea350dfe0f3d7d44b342c1a[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Tue May 7 22:28:28 2024 +1000
+
+    update perception node
+
+[33mcommit 01be3972bf94bcd9cf573122a3427c7ae9d2ce3e[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Tue May 7 17:55:44 2024 +1000
+
+    Update lookup mechanism
+
+[33mcommit c7278c8790121763831c1e82780222e70d30e94d[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Tue Apr 30 20:52:52 2024 +1000
+
+    refactor and restructure functions
+
+[33mcommit 0cb4c2773821bbbac050c7868d681bab0834f7c8[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Mon Apr 29 14:17:03 2024 +1000
+
+    add number of bottles
+
+[33mcommit d77c1d52d7801fbd598c0bcabd65ce1928bd0b17[m
+Merge: 3b340ba 4005b72
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Mon Apr 29 14:08:13 2024 +1000
+
+    Merge branch 'main' of github.com:minhtugonnabelit/wdwyl_ros1 into main
+
+[33mcommit 3b340bad19e60eb3e3f73d7e04aa39e998d85efd[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Mon Apr 29 14:07:56 2024 +1000
+
+    .
+
+[33mcommit 4005b72fea55b9e224d153f9431fc00a0ee8acad[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Mon Apr 29 11:32:39 2024 +1000
+
+    Initialize classification module
+
+[33mcommit 97d5257b90d050896e4cbdce3fbb9ff5e56d3c47[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Sat Apr 27 20:56:15 2024 +1000
+
+    add get yaw
+
+[33mcommit e796a541316464ba7f4272dad26552a3691f792a[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sat Apr 27 17:49:34 2024 +1000
+
+    udpate todo for params
+
+[33mcommit 8f555f98761c5a30e12dc06b9b0becad31770866[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sat Apr 27 16:57:47 2024 +1000
+
+    udpate
+
+[33mcommit 3f17fbe9cc88b7b40641585d0cb67b625eca7d96[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Fri Apr 26 19:01:47 2024 +1000
+
+    Setup state machine and bottle data handler
+
+[33mcommit 85ea8a33d0e29175df49c1b090e700b779b04cbd[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Tue Apr 23 21:50:28 2024 +1000
+
+    Started to test pick and place with static obstacle
+
+[33mcommit 3adb85e68cd3bd2a63accf39d4f36e7ebb73673f[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Mon Apr 22 19:53:38 2024 +1000
+
+    Update launch file change
+
+[33mcommit e8c30b0f52b44f66e0243a2d42c742ac8d62956a[m
+Merge: 28f26ae 7c6a156
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Mon Apr 22 10:46:32 2024 +1000
+
+    incoming conflict
+
+[33mcommit 28f26aed53fdbb751be2382c2298a95ff042ca50[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Mon Apr 22 10:45:04 2024 +1000
+
+    incoming conflict
+
+[33mcommit 7c6a156ca125bb85e5bbfbd8404ca871a4f7a9cc[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Mon Apr 22 01:14:40 2024 +1000
+
+    Remove visual and collision for virtual link of endpoint
+
+[33mcommit 6e08dcd6890343967a5f9f588e355771184b7ea5[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sun Apr 21 21:21:40 2024 +1000
+
+    Update URDF and added moveit config
+
+[33mcommit d18383b66725e872fdf853f6f379227b0d121707[m
+Merge: 38a5604 a10399b
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sun Apr 21 17:43:26 2024 +1000
+
+    Merge branch 'main' of github.com:minhtugonnabelit/wdwyl_ros1 into main
+
+[33mcommit 38a560495010033d2f51c7004f4912d6e97945ea[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Fri Apr 19 15:43:50 2024 +1000
+
+    Update README
+
+[33mcommit a10399b3725cade8bc56728023c1f27763d6d5c6[m
+Author: Anh Minh Tu <106978614+minhtugonnabelit@users.noreply.github.com>
+Date:   Fri Apr 19 15:34:55 2024 +1000
+
+    Delete build/Testing directory
+
+[33mcommit d276759692f2d2c20e1ecf750bf3403df0b637cd[m
+Author: Anh Tung Nguyen <125330698+anhtungnguyen@users.noreply.github.com>
+Date:   Thu Apr 18 23:36:50 2024 +1000
+
+    Update real_time_detect_using_model.py
+
+[33mcommit 46a13b347734043cc6b38bf874f3ae835df05a81[m
+Author: Minh Quan Vu <59466039+minhquanvu0604@users.noreply.github.com>
+Date:   Thu Apr 18 16:41:06 2024 +1000
+
+    Delete src/perception/localization.py
+
+[33mcommit 0f1cb2aff6db1238e5255e7bfd6e96f34942cb90[m
+Author: Minh Quan Vu <59466039+minhquanvu0604@users.noreply.github.com>
+Date:   Thu Apr 18 16:40:59 2024 +1000
+
+    Delete src/perception/classification.py
+
+[33mcommit 138158ea51ab92c28762034d272a2a19f04614ec[m
+Author: Minh Quan Vu <59466039+minhquanvu0604@users.noreply.github.com>
+Date:   Thu Apr 18 16:40:15 2024 +1000
+
+    Create README.md
+
+[33mcommit 77974bd4961bda74724e27348b1e7078a67af034[m
+Author: Anh Tung Nguyen <125330698+anhtungnguyen@users.noreply.github.com>
+Date:   Mon Apr 15 23:54:52 2024 +1000
+
+    Create Compute_global_mean_and_std_dev.py
+
+[33mcommit d70ed8210e52dbb705c14aca7ddb6cbc43f5bb80[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Mon Apr 15 19:41:35 2024 +1000
+
+    daily commit
+
+[33mcommit 3621d590df4a16990be1daaac53b66deeceb2de1[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Fri Apr 12 21:21:21 2024 +1000
+
+    daily commit with urdf
+
+[33mcommit c90583f3abf46f9f30b666ba0d5bea10c65904a9[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Thu Apr 11 21:34:29 2024 +1000
+
+    Modified Realsense class
+
+[33mcommit bd4f6e40c9f8ae10e869589bf2a524b1b915e73c[m
+Author: Anh Tung Nguyen <125330698+anhtungnguyen@users.noreply.github.com>
+Date:   Thu Apr 11 01:37:44 2024 +1000
+
+    add logic to get crate_pos and bottle_pos separately
+
+[33mcommit bff2ea104e1e58ab8171eae6eb610a445dd6dea1[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Wed Apr 10 21:50:15 2024 +1000
+
+    Update urdf with base
+
+[33mcommit 6ac7cf766266c4a3445a3df8ad893837d309d18b[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Wed Apr 10 13:25:57 2024 +1000
+
+    Updated rviz config and setup TODO
+
+[33mcommit a05d7f5dd4f07f1e18ccbad6dafa2be3a681f427[m
+Merge: 3ad61b4 89f8789
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Wed Apr 10 00:10:18 2024 +1000
+
+    Merging
+
+[33mcommit 3ad61b47adbbee8cf8caf2e489f7e51ac07a63a6[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Wed Apr 10 00:07:57 2024 +1000
+
+    Incoming conflict in build folder
+
+[33mcommit 89f87895de388e39ba975162a9ddc0393b4ebd8d[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Tue Apr 9 21:39:52 2024 +1000
+
+    Added combined urdf of ur3e and rg2
+
+[33mcommit 48d53d6b02474776dbd8aacaa72e80675b1e815a[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Tue Apr 9 14:19:11 2024 +1000
+
+    add node for perception
+
+[33mcommit 0f8f1c51ec06fd0ff5207c792193b9d68e8df853[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Tue Apr 9 13:37:31 2024 +1000
+
+    restructure
+
+[33mcommit 6a2e568938470b05f0b3e53e01f05ba698d2f855[m
+Author: anhtungnguyen <anhtungnguyen1809@gmail.com>
+Date:   Tue Apr 9 13:33:53 2024 +1000
+
+    add bottle detection and localization
+
+[33mcommit 2ca8ebda8c223abba27cafc5802c288d2a2e4d0f[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Mon Apr 8 18:38:51 2024 +1000
+
+    Update params
+
+[33mcommit 579db15caf47fb5b1204cfba9bf79f7f6cb8ada3[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sun Apr 7 21:13:54 2024 +1000
+
+    Minor adjustment
+
+[33mcommit 317d78502afc816ad08054b44ad76a58e9609749[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Sun Apr 7 02:16:06 2024 +1100
+
+    Added classes to manage collision object
+
+[33mcommit ddc66ea5a81eb2c7f0fe5514550ea2a62830e8ff[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Fri Apr 5 14:57:54 2024 +1100
+
+    Update .gitignore
+
+[33mcommit 3f42f4d65d8bf5af70cb571e920cf642cdb5c4d9[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Fri Apr 5 14:57:30 2024 +1100
+
+    Stop tracking build directory
+
+[33mcommit 96b580bd4db229f9b3b85b5248addc344732d6e8[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Fri Apr 5 14:09:48 2024 +1100
+
+    ignoring build
+
+[33mcommit bef436ebbd1c571357dc0ef0b522ed87b7d5a17c[m
+Merge: 43abdca cf5b6e5
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Fri Apr 5 14:08:08 2024 +1100
+
+    Merge branch 'main' of github.com:minhtugonnabelit/wdwyl_ros1 into main
+
+[33mcommit 43abdcab78f670a18ec4dcb374eedb101b6492ea[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Fri Apr 5 14:07:51 2024 +1100
+
+    taking imcoming conflict
+
+[33mcommit cf5b6e52527a5d01a1a61ed7a422e1d64b998efe[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Fri Apr 5 02:04:22 2024 +1100
+
+    Rename node
+
+[33mcommit 257c1d04dbba077816c5ba22b1984c94ba61cb68[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Thu Apr 4 22:42:13 2024 +1100
+
+    Adding constants for mission usage
+
+[33mcommit d645438b4ca91662ed8c880106c292aacbab4a9c[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Thu Apr 4 14:28:22 2024 +1100
+
+    Initialize architecture for control node and utility function
+
+[33mcommit 71023229fec67b7ffe8e07b11cdff20f10a133f4[m
+Author: Anh Minh Tu <anhminh.tu@student.uts.edu.au>
+Date:   Thu Apr 4 11:08:55 2024 +1100
+
+    Update robot controller class
+
+[33mcommit caab6c5858a75cf24d3d8b73a949cb4ff1bc66d1[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Wed Apr 3 21:52:45 2024 +1100
+
+    updated class
+
+[33mcommit f2edc42810a719ca069253f12517f88078afa2fa[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Wed Apr 3 20:43:14 2024 +1100
+
+    Update packages structure
+
+[33mcommit f2146c9891556b9f1c044e1d3e2420534cafc0e2[m
+Author: AnhMinhTu <AnhMinh.Tu@student.uts.edu.au>
+Date:   Wed Apr 3 20:17:03 2024 +1100
+
+    first commit
