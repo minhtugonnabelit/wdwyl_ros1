@@ -138,10 +138,10 @@ class RealSense:
         brightness_increment = 50
         self.rgb_image = cv2.add(self.rgb_image, (brightness_increment, brightness_increment, brightness_increment, 0))
 
-        if (self.get_crate == True and self.get_bottle == False):
+        if (self.get_crate == True and self.get_bottle == False and self.get_aruco == False):
             self.img_processing()
         
-        elif (self.get_crate == False and self.get_bottle == True):
+        elif (self.get_crate == False and self.get_bottle == True and self.get_aruco == False):
             
             width_in_pixels = None
             height_in_pixels = None
