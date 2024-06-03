@@ -10,7 +10,8 @@ from ultralytics import YOLO
 import matplotlib
 import matplotlib.pyplot as plt
 
-MODEL_PATH = '/root/aifr/wdwyl_ros1/config/detect/detect/train/weights/best.pt'
+# MODEL_PATH = '/root/aifr/wdwyl_ros1/config/detect/detect/train/weights/best.pt'
+MODEL_PATH='/root/aifr/wdwyl_ros1/perception/detection/config/detect/detect/train/weights/best.pt'
 
 
 class BoundingBoxDataset(Dataset):
@@ -28,7 +29,9 @@ class BoundingBoxDataset(Dataset):
         default_seq_label (str): Name of the saved default sequence label file
     """
 
-    DATA_DIR = '/root/aifr/wdwyl_ros1/src/perception/YOLO/lstm/data/sequence_npy'
+    # DATA_DIR = '/root/aifr/wdwyl_ros1/src/perception/YOLO/lstm/data/sequence_npy'
+    DATA_DIR = '/root/aifr/wdwyl_ros1/perception/lstm/data/sequence_npy'
+
 
     def __init__(self, videos_path, yolo_model, sequence_length, default_seq_label):
         self.videos_path = videos_path
@@ -48,21 +51,26 @@ class BoundingBoxDataset(Dataset):
         Ignore the videos that have been processed
         """
 
-        # default_save_path = os.path.join(BoundingBoxDataset.DATA_DIR, 'default_sequence_label')
-        # default_save_path_npz = default_save_path + '.npz'  
         save_path = os.path.join(BoundingBoxDataset.DATA_DIR, self.default_seq_label)    
 
         self.sequences = []
         self.labels = []
 
         if not os.path.isfile(save_path):
+
+            print(f"Error: default_sequence_label.npz does not exist.")
+
             for video in self.videos:
                 video_path = os.path.join(self.videos_path, video)
 
                 checker = FrameChecker(self.yolo_model, video_path)
+
+                # Obtain the sequence and labels
+                # Sequence from frame checker covers all the frames in the video
                 sequence_path, labels = checker.process()
                 sequence = np.load(sequence_path) # Load from npy, sequence is a list of list of 0 and 1
 
+                # Extract the squence to the required length
                 for bb_id, bbox in enumerate(sequence):
                     for i in range(len(bbox)-self.sequence_length+1):
                         self.sequences.append(bbox[i:i+self.sequence_length])
@@ -113,12 +121,6 @@ class BoundingBoxDataset(Dataset):
                 # Add a newline for separation between arrays
                 f.write('\n')
 
-
-
-        
-
-
-
     def __len__(self):
         return len(self.sequences)
     
@@ -139,7 +141,8 @@ class FrameChecker:
         threshold (int): The threshold for the detection score
     """
 
-    DATA_DIR = '/root/aifr/wdwyl_ros1/src/perception/YOLO/lstm/data/sequence_npy'
+    # DATA_DIR = '/root/aifr/wdwyl_ros1/src/perception/YOLO/lstm/data/sequence_npy'
+    DATA_DIR = '/root/aifr/wdwyl_ros1/perception/lstm/data/sequence_npy'
 
 
     def __init__(self, model, video_path):
@@ -440,7 +443,7 @@ if __name__ == '__main__':
     # checker.process()
     batch_size = 1
     train_dataset = BoundingBoxDataset(train_data_path, yolo_model=model, sequence_length=sequence_length,
-                                       default_seq_label='train_default_sequence_label.npz')
+                                       default_seq_label='train_default_sequence_label')
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     # val_dataset = BoundingBoxDataset(val_data_path, yolo_model=model, sequence_length=sequence_length)
