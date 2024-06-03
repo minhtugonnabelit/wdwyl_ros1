@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 
 class SyntheticDataset(Dataset):
 
-    DATA_DIR = '/root/aifr/wdwyl_ros1/perception/lstm/data_synthesise/synthesised_data'
+    DATA_DIR = '/root/aifr/wdwyl_ros1/perception/lstm/data_synthesise'
 
     def __init__(self, sequence_length, num_sequences = 1000):
         """
@@ -30,8 +30,8 @@ class SyntheticDataset(Dataset):
             self.generate_synthetic_data()
 
         data = np.load(self.save_path)
-        self.data = data['synthetic_data']
-        self.labels = data['labels']
+        self.data = torch.tensor(data['synthetic_data'], dtype=torch.float32).to('cuda:0')
+        self.labels = torch.tensor(data['labels'], dtype=torch.float32).to('cuda:0')
 
 
     def generate_synthetic_data(self):
@@ -44,14 +44,14 @@ class SyntheticDataset(Dataset):
             print('Synthetic data already exists.')
 
         num_false_detection = 5
+        num_each_class = self.num_sequences // 2
 
         synthetic_data = []
-        # labels = [1] * self.num_sequences/2 + [0] * self.num_sequences/2
-        labels = np.ones(self.num_sequences/2) + np.zeros(self.num_sequences/2)
+        labels = np.concatenate((np.ones(num_each_class), np.zeros(num_each_class)))
 
         positive_data = np.ones(self.sequence_length)        
-        for _ in range(self.num_sequences/2):
-            num_zeros = np.random.randint(1, num_false_detection)
+        for _ in range(num_each_class):
+            num_zeros = np.random.randint(0, num_false_detection)
             data = positive_data.copy()
             for _ in range(num_zeros):
                 idx = np.random.randint(self.sequence_length)
@@ -59,8 +59,8 @@ class SyntheticDataset(Dataset):
             synthetic_data.append(data)
 
         negative_data = np.zeros(self.sequence_length)
-        for _ in range(self.num_sequences/2):
-            num_ones = np.random.randint(1, num_false_detection)
+        for _ in range(num_each_class):
+            num_ones = np.random.randint(0, num_false_detection)
             data = negative_data.copy()
             for _ in range(num_ones):
                 idx = np.random.randint(self.sequence_length)
@@ -74,8 +74,8 @@ class SyntheticDataset(Dataset):
         return self.num_sequences - 1
     
     def __getitem__(self, idx):
-        sequence = torch.tensor(self.data[idx], dtype=torch.float32).to(self.device)
-        label = torch.tensor(self.labels[idx], dtype=torch.float32).to(self.device)
+        sequence = self.data[idx]
+        label = self.labels[idx]
         return sequence, label
 
 def inspect_dataloader(dataloader, num_batches=5):
@@ -83,7 +83,6 @@ def inspect_dataloader(dataloader, num_batches=5):
         print(f"Batch {i+1}")
         print("Sequences:", sequences)
         print("Labels:", labels)
-        print("Sequences shape:", sequences.shape)
         print("Labels shape:", labels.shape)
         if i >= num_batches - 1:  # Stop after inspecting the desired number of batches
             break
@@ -97,5 +96,5 @@ if __name__ == '__main__':
     dataset = SyntheticDataset(sequence_length, num_sequences)
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    inspect_dataloader(dataset, num_batches=5)
+    inspect_dataloader(data_loader, num_batches=5)
 

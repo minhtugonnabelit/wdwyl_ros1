@@ -388,9 +388,9 @@ class FrameChecker:
 
                 for i in range(len(all_detected_bbox)):
                     if all_detected_bbox_in_frame[i]:
-                        sequence[i].append(1)
+                        sequence[i].extend(1)
                     else:
-                        sequence[i].append(0)
+                        sequence[i].extend(0)
 
         # Save to npy file   
         np.save(save_path, np.array(sequence))
