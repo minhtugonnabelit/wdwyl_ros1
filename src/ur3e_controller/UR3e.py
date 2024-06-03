@@ -8,12 +8,11 @@ import rospy
 import moveit_commander
 from moveit_commander import RobotCommander, PlanningSceneInterface, MoveGroupCommander
 from moveit_msgs.msg import RobotTrajectory, DisplayTrajectory, Constraints, JointConstraint, OrientationConstraint
-
 from sensor_msgs.msg import JointState
 
 from roboticstoolbox.models import UR3
-from ur3e_controller.utility import *
 from ur3e_controller.gripper import Gripper
+from ur3e_controller.utility import *
 from ur3e_controller.collision_manager import CollisionManager
 from scipy.spatial.transform import Rotation as R
 
@@ -22,7 +21,6 @@ from spatialmath import SE3
 from scipy.optimize import minimize
 import numpy as np
 
-
 # Constants variables
 POS_TOL = 0.001  # m
 ORI_TOL = 0.001  # m
@@ -30,15 +28,6 @@ MAX_VEL_SCALE_FACTOR = 0.05
 MAX_ACC_SCALE_FACTOR = 0.05
 GRIPPER_OPEN = 500  # 0.1mm
 GRIPPER_CLOSE = 200  # 0.1mm
-
-# predefined configurations as reference guess for IK solver
-PREDEFINED_CONFIGS = {
-    'BACK':  [pi/2, -pi/2, -pi/2,  -pi/2, pi/2, 0.38],
-    "FRONT": [-pi/2, -pi/2, 0, -1.19, -pi/2, 0.38],
-    "LEFT":  [pi, -pi/2, 0,  -1.19, -pi/2, 0.38],
-    "RIGHT": [0, -pi/2, 0, -1.19, -pi/2, 0.38],
-}
-
 
 class UR3e:
 
@@ -56,6 +45,7 @@ class UR3e:
         self._robot = RobotCommander()
         self._scene = PlanningSceneInterface()
         self._group = MoveGroupCommander("ur3e")
+
         self._gripper = Gripper()
         self.constraints = Constraints()
         self.virtual_UR = UR3()
@@ -66,21 +56,20 @@ class UR3e:
         self._eef_link = self._group.get_end_effector_link()
         self._cur_js = self._group.get_current_joint_values()
 
-        self._display_trajectory_publisher = rospy.Publisher(
-            "/move_group/display_planned_path", DisplayTrajectory, queue_size=20)
-
         self._marker_pub = rospy.Publisher(
             "visualization_marker", Marker, queue_size=10)
 
-        self._joint_states_sub = rospy.Subscriber(
-            "/joint_states", JointState, self._joint_states_callback)
+        self._display_trajectory_publisher = rospy.Publisher(
+            "/move_group/display_planned_path", DisplayTrajectory, queue_size=20)
+
+        # self._joint_states_sub = rospy.Subscriber(
+        #     "/joint_states", JointState, self._joint_states_callback)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
 
-        setup_completed = self.movegroup_setup()
-
+        self.movegroup_setup()
         rospy.logdebug(f"============ Planning frame: {self._planning_frame}")
         rospy.logdebug(f"============ End effector link: {self._eef_link}")
 
@@ -160,8 +149,8 @@ class UR3e:
         joint_constraint_04 = JointConstraint()
         joint_constraint_04.joint_name = "shoulder_pan_joint"
         joint_constraint_04.position = 2.0944
-        joint_constraint_04.tolerance_above = 2.1944
-        joint_constraint_04.tolerance_below = 2.1944
+        joint_constraint_04.tolerance_above = 2.3944
+        joint_constraint_04.tolerance_below = 2.3944
         joint_constraint_04.weight = 1
         constraints.joint_constraints.append(joint_constraint_04)
 
@@ -196,6 +185,17 @@ class UR3e:
         joint_constraint_05.tolerance_below = 3.14
         joint_constraint_05.weight = 1
         constraints.joint_constraints.append(joint_constraint_05)
+        
+        # set orientation constraint to be always pointing down
+        orientation_constraint = OrientationConstraint()
+        orientation_constraint.header.frame_id = "base_link"
+        orientation_constraint.link_name = self._eef_link
+        orientation_constraint.orientation = self._group.get_current_pose().pose.orientation
+        orientation_constraint.absolute_x_axis_tolerance = 0.1
+        orientation_constraint.absolute_y_axis_tolerance = 0.1
+        orientation_constraint.absolute_z_axis_tolerance = 0.1
+        orientation_constraint.weight = 1
+        constraints.orientation_constraints.append(orientation_constraint)
 
         self.constraints = constraints
         self._group.set_path_constraints(constraints)
@@ -444,10 +444,10 @@ class UR3e:
         target_marker = create_marker(frame_id, type, pose)
         self._marker_pub.publish(target_marker)
 
-    # Callbacks
-    def _joint_states_callback(self, data: JointState):
-        r"""
-        Callback function for the joint states subscriber.
-        This data feeds directly to the virtual UR3 model as kinematic solver."""
+    # # Callbacks
+    # def _joint_states_callback(self, data: JointState):
+    #     r"""
+    #     Callback function for the joint states subscriber.
+    #     This data feeds directly to the virtual UR3 model as kinematic solver."""
 
-        self.virtual_UR.q = data.position
+    #     self.virtual_UR.q = data.position

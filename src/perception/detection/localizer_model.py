@@ -79,6 +79,14 @@ class RealSense:
         self.get_bottle = flag
         return self.get_bottle
 
+    def set_Aruco_Flag(self, flag: bool, wait=False):
+        r"""
+        Set the flag to enable the aruco detection.
+        @param: flag A boolean value"""
+
+        self.get_aruco = flag
+        return self.get_aruco
+
     def get_crate_pos(self):
         return self.crate_pos
     
@@ -433,3 +441,100 @@ class RealSense:
             print(f"Marker ID: {max_markerID}, Position (x, y, z): {position}")
         else:
             print("can not DETECT")
+    def aruco_processing_tam(self):
+ 
+        img = self.rgb_image
+ 
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+ 
+        # Detect ArUco markers:
+        markerCorners, markerIds, _= cv2.aruco.detectMarkers(gray, self.dictionary, parameters=self.parameters)
+ 
+        if markerIds is not None:
+            ########################
+            #This function is used to get the rotation matrix and translation matrix
+            #for reference: https://docs.opencv.org/4.8.0/d9/d6a/group__aruco.html#ga3bc50d61fe4db7bce8d26d56b5a6428a
+            marker_size = 0.06          #replace with real marker size
+ 
+            fx = self.depth_intrinsics.fx       #focal length in x axis
+            fy = self.depth_intrinsics.fy      #focal length in y axis
+            cx = self.depth_intrinsics.ppx           #principal point x
+            cy = self.depth_intrinsics.ppy            #principal point y
+ 
+            camera_matrix = np.array([[fx, 0, cx],
+                                    [0, fy, cy],
+                                    [0, 0, 1]], dtype=np.float64)
+ 
+            k1 = 0
+            k2 = 0
+            p1 = 0
+            p2 = 0
+            k3 = 0
+            
+            dist_coeffs = np.array([k1, k2, p1, p2, k3], dtype=np.float64)
+ 
+            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(markerCorners, marker_size, camera_matrix, dist_coeffs)
+            
+            self.translation = tvecs
+            self.rotation = rvecs
+            
+            cv2.aruco.drawDetectedMarkers(img, markerCorners, markerIds)
+ 
+            markers = []
+            for i in range(len(markerIds)):
+                
+                # Print the position of the marker in the camera coordinate system
+                position = tvecs[i][0]
+                x_value = np.abs(position[0])   # get x value of the position
+                distance = np.linalg.norm(position)
+                if x_value < 0.05:              # filter out the marker that out of the middle of the camera
+                    markers.append((x_value ,distance, position, markerIds[i][0], copy.deepcopy(i)))
+ 
+            if len(markers) > 1:
+
+                markers.sort(key=lambda x: x[0])
+    
+                # Get the two closest markers
+                closest_markers = markers[:2]
+    
+                further_marker = max(closest_markers, key=lambda x: x[1])
+                x_value, distance, position, markerId, index = further_marker
+    
+                # Draw the position on the image
+                cv2.putText(img, f"ID: {markerId} Pos: {position}",
+                            (int(markerCorners[index][0][0][0]), int(markerCorners[index][0][0][1])),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2, cv2.LINE_AA)
+    
+                # Example: Taking the depth value of the first detected marker's center
+                center_x = int((markerCorners[i][0][0][0] + markerCorners[i][0][2][0]) / 2)
+                center_y = int((markerCorners[i][0][0][1] + markerCorners[i][0][2][1]) / 2)
+    
+                # Draw a circle at the center of the marker
+                cv2.circle(img, (center_x, center_y), 5, (0, 0, 255), -1)
+    
+                self.aruco_position = position
+                print(f"Marker ID: {markerId}, Position (x, y, z): {position}")
+            
+            else:
+                self.aruco_position = None
+
+        else:
+            print("can not DETECT")
+ 
+if __name__ == '__main__':
+
+    # Initialize the ROS Node
+    rospy.init_node('realsense_yolo', anonymous=True, log_level=1)
+    
+    # Create the RealSense object
+    rs = RealSense()
+ 
+    rs.get_bottle = False
+    rs.get_crate = False
+    rs.get_aruco = True
+ 
+    # Spin to keep the script for exiting
+    rospy.spin()
+ 
+    # Destroy all OpenCV windows
+    cv2.destroyAllWindows()

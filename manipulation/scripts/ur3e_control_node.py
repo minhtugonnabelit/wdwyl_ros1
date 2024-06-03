@@ -7,6 +7,7 @@ from enum import Enum
 import rospy
 import tf2_ros
 from wdwyl_ros1.srv import CurrentState, CurrentStateRequest
+from std_srvs.srv import SetBool, SetBoolResponse, SetBoolRequest
 
 # Importing planner module
 from geometry_msgs.msg import Pose
@@ -46,6 +47,7 @@ BOTTLE_PLACEMENT = {
 }
 
 CONTROL_RATE = 10  # Hz
+PLACEMENT_SLOT = 2
 
 
 class State(Enum):
@@ -62,10 +64,16 @@ class MissionPlanner:
 
     def __init__(self) -> None:
 
-        rospy.init_node("What_drink_would_you_like",
-                        log_level=2, anonymous=True)
+        rospy.init_node("What_drink_would_you_like", log_level=2, anonymous=True)
         rospy.loginfo("Initializing MissionPlanner")
         self.rate = rospy.Rate(CONTROL_RATE)
+
+        # Hosting the system halt service
+        self.system_halt_srv_server = rospy.Service('System_Halt', SetBool, self.handle_system_halt)
+        self.system_halt_srv_client = rospy.ServiceProxy('System_Halt', SetBool)
+
+        # current state service server is hosted by another node, thus we only need the client
+        self.current_state_srv_client = rospy.ServiceProxy('current_state', CurrentState)       
 
         # Initialize the UR3e controller
         self.ur3e = UR3e()
@@ -85,12 +93,12 @@ class MissionPlanner:
 
         # Initialize the mission planner variables
         self._success = True
+        self._system_halt = False
         self._bound_id = 'bound'
 
         # Initialize the mission planner state and data variables
         self._state = State.IDLE
         self._bottle_num = 0
-        self._bottle_type = None
         self._bottles = {
             'heineken': {'service_name': 'number_of_heineken_bottle', 'count': 0},
             'crown': {'service_name': 'number_of_crown_bottle', 'count': 0},
@@ -111,11 +119,29 @@ class MissionPlanner:
 
         rospy.loginfo("Starting system loop")
         done = False
-
         while not rospy.is_shutdown():
 
             # check if the crate bound box is still in the scene
             self.collisions.remove_crate_bound([self._bound_id])
+
+            # # this condition is used to limit the number of mission to one bottle only
+            # if not done:
+
+            # looking for crate pose
+            self._state = State.DETECT_CRATE
+            self._set_state_srv('current_state', self._state.value)
+            crate_pose = self.look_for_crate()
+
+            # Move to the crate position
+            self._success = self.ur3e.go_to_pose_goal(pose=crate_pose,
+                                                        child_frame_id="crate_center",
+                                                        parent_frame_id="tool0")
+            if self._success:
+                rospy.loginfo("Arrived at the crate center")
+                self._detect_crate_config = self.ur3e.get_current_joint_values()
+            else:
+                break
+            
 
             # check if there still bottle in the crate
             self.rs.set_Bottle_Flag(True)
@@ -123,132 +149,172 @@ class MissionPlanner:
             if self.rs.get_num_of_bottle() == 0:
                 rospy.loginfo("No more bottle in the crate")
                 self.rs.set_Bottle_Flag(False)
-                self.call_service(name='warning_data',
+                self._set_state_srv(name='warning_data',
                                   input='All bottles from crate are sorted!')
+                self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)            # Go back to the detect config to look for the next crate
                 rospy.signal_shutdown("No more bottle in the crate")
             else:
                 rospy.loginfo(f'{self.rs.get_num_of_bottle()} detected!')
-                self.call_service('number_of_bottle',
+                self._set_state_srv('number_of_bottle',
                                   self.rs.get_num_of_bottle())
 
-            # this condition is used to limit the number of mission to one bottle only
-            if not done:
+            # Look for bottle pose
+            self._state = State.DETECT_BOTTLE
+            self._set_state_srv('current_state', self._state.value)
+            bottle_pose = self.look_for_bottle()
 
-                # looking for crate pose
-                self._state = State.DETECT_CRATE
-                self.call_service('current_state', self._state.value)
-                crate_pose = self.look_for_crate()
+            # Close the gripper to 500 0.1mm wide to fit in the tiny gripping state
+            self.ur3e.open_gripper_to(width=500, force=200)
 
-                # Move to the crate position
-                self._success = self.ur3e.go_to_pose_goal(pose=crate_pose,
-                                                          child_frame_id="crate_center",
-                                                          parent_frame_id="tool0")
-                if self._success:
-                    rospy.loginfo("Arrived at the crate center")
-                    self._detect_crate_config = self.ur3e.get_current_joint_values()
-                else:
-                    break
+            #####
+            #   ACTION TO PICK THE BOTTLE FOR CLASSIFICATION
+            #####
 
-                # Look for bottle pose
-                self._state = State.DETECT_BOTTLE
-                self.call_service('current_state', self._state.value)
-                bottle_pose = self.look_for_bottle()
+            # Hang to evelated level of the bottle possition
+            self._state = State.PICK_BOTTLE
+            self._set_state_srv('curent_state', self._state.value)
+            self._success = self.ur3e.go_to_pose_goal(pose=bottle_pose,
+                                                        child_frame_id="bottle_center",
+                                                        parent_frame_id="tool0")
+            rospy.sleep(1)
 
-                # Close the gripper to 500 0.1mm wide to fit in the tiny gripping state
-                self.ur3e.open_gripper_to(width=500, force=200)
+            # Lower the robot to the bottle neck
+            self._success = self.ur3e.move_ee_along_axis(
+                axis="z", delta=-0.07)
+            if self._success:
+                # Close the gripper to 180 0.1mm wide to grip the bottle
+                self.ur3e.open_gripper_to(width=180, force=400)
+                rospy.loginfo("Bottle picked successfully")
+            rospy.sleep(1)
 
-                #####
-                #   ACTION TO PICK THE BOTTLE FOR CLASSIFICATION
-                #####
+            # setup virtual cylinder for the bottle collision object
+            bottle_pose = list_to_pose([0, 0, 0.23/2, 0, 0, 0])
+            _, bot_id = self.collisions.add_cylinder(
+                bottle_pose, object_type='bottle', frame_id='end_point_link', height=0.24, radius=0.03)
+            self.collisions.attach_object(eef_link='tool0', obj_id=bot_id, touch_links=[
+                                            'right_inner_finger', 'left_inner_finger'])
 
-                # Hang to evelated level of the bottle possition
-                self._state = State.PICK_BOTTLE
-                self.call_service('curent_state', self._state.value)
-                self._success = self.ur3e.go_to_pose_goal(pose=bottle_pose,
-                                                          child_frame_id="bottle_center",
-                                                          parent_frame_id="tool0")
-                rospy.sleep(1)
+            # Move to the classify pose
+            self.ur3e.move_ee_along_axis(axis="z", delta=0.16)
+            rospy.sleep(1)
 
-                # Lower the robot to the bottle neck
-                self._success = self.ur3e.move_ee_along_axis(
-                    axis="z", delta=-0.07)
-                if self._success:
-                    # Close the gripper to 180 0.1mm wide to grip the bottle
-                    self.ur3e.open_gripper_to(width=180, force=400)
-                    rospy.loginfo("Bottle picked successfully")
-                rospy.sleep(1)
+            self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
+            rospy.sleep(2)
 
-                # setup virtual cylinder for the bottle collision object
-                bottle_pose = list_to_pose([0, 0, 0.23/2, 0, 0, 0])
-                _, bot_id = self.collisions.add_cylinder(
-                    bottle_pose, object_type='bottle', frame_id='end_point_link', height=0.24, radius=0.04)
-                self.collisions.attach_object(eef_link='tool0', obj_id=bot_id, touch_links=[
-                                              'right_inner_finger', 'left_inner_finger'])
+            ### ---------------------------------------------####
 
-                # Move to the classify pose
-                self.ur3e.move_ee_along_axis(axis="z", delta=0.16)
-                rospy.sleep(1)
+            # classify the bottle
+            self._state = State.CLASSIFY_BOTTLE
+            self._set_state_srv('current_state', self._state.value)
 
-                self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
-                rospy.sleep(2)
+            bottle_type = self.classify_bottle()
+            rospy.loginfo(f"Bottle type: {bottle_type}")
+            self._set_state_srv(name=self._bottles[bottle_type]['service_name'],
+                                input=self._bottles[bottle_type]['count']+1)
 
-                ### ---------------------------------------------####
+            self._state = State.PLACE_BOTTLE
+            self._set_state_srv('current_state', self._state.value)
 
-                # classify the bottle
-                self._state = State.CLASSIFY_BOTTLE
-                self.call_service('current_state', self._state.value)
+            #####
+            #   ACTION TO SORT THE BOTTLE
+            #####
+            
+            # add thin layer for crate top collision object
+            self.bound_id = self.collisions.add_crate_bound()
+            self._success = self.ur3e.move_ee_along_axis(
+                axis='x', delta=0.2)
+            rospy.sleep(1)
 
-                bottle_type = self.classify_bottle()
-                rospy.loginfo(f"Bottle type: {bottle_type}")
-                self.call_service(name=self._bottles[bottle_type]['service_name'],
-                                  input=self._bottles[bottle_type]['count']+1)
+            # ------------------------------------------------------------ #
 
-                # add thin layer for crate top collision object
-                self.bound_id = self.collisions.add_crate_bound()
+            # First drag the bottle didicated row of placement for type of bottle
+            self._success = self.ur3e.go_to_goal_joint(
+                BOTTLE_PLACEMENT[bottle_type])
 
-                #####
-                #   ACTION TO SORT THE BOTTLE
-                #####
-                self._state = State.PLACE_BOTTLE
-                self.call_service('current_state', self._state.value)
+            # Look for the the placement area as the middle of the picture frame
 
-                self._success = self.ur3e.move_ee_along_axis(
-                    axis='x', delta=0.2)
-                rospy.sleep(1)
+            self.rs.set_Aruco_Flag(True)
+            rospy.sleep(1)
+            aruco_pose = self.rs.get_aruco_position()
+            # if aruco_pose is None:
+            #     rospy.loginfo(
+            #         f"No slot left to place the {bottle_type} bottle")
+            #     self._set_state_srv(name='warning_data',
+            #                       input=f"No slot left to place the {bottle_type} bottle")
+            self._success = self.ur3e.move_ee_along_axis(axis='z', delta=-0.1)
+            
+            # This pose is presented in tool0 frame with Z pointing downward, thus lower z, the higher the pose
+            aruco_pose = list_to_pose(
+                [aruco_pose[0], aruco_pose[1], ENDPOINT_OFFSET, 0, 0, 0])
+            self.rs.set_Aruco_Flag(False)
 
-                # Add a flow control to check available spot at the placing
-                self._success = self.ur3e.go_to_goal_joint(
-                    BOTTLE_PLACEMENT[bottle_type])
-                rospy.sleep(1)
+            self._success = self.ur3e.go_to_pose_goal(pose=aruco_pose,
+                                                        child_frame_id="aruco_center",
+                                                        parent_frame_id="tool0")
 
-                self._success = self.ur3e.move_ee_along_axis(
-                    axis='z', delta=-0.155)
-                if self._success:
-                    rospy.loginfo("Bottle placed successfully")
-                    self.ur3e.open_gripper_to(width=580, force=200)
-                    self.collisions.detach_object(
-                        eef_link='tool0', obj_id=bot_id)
-                    rospy.loginfo(f"object {bot_id} detached")
-                rospy.sleep(1)
+            # Move to the placement area
+            self._success = self.ur3e.move_ee_along_axis(
+                axis='z', delta=-0.155)
+            if self._success:
+                rospy.loginfo("Bottle placed successfully")
+                self.ur3e.open_gripper_to(width=580, force=200)
+                self.collisions.detach_object(
+                    eef_link='tool0', obj_id=bot_id)
+                rospy.loginfo(f"object {bot_id} detached")
+            rospy.sleep(1)
 
-                # DONE
-                self._state = State.BACK_TO_HOME
-                self.call_service('current_state', self._state.value)
-                self.ur3e.move_ee_along_axis(axis='z', delta=0.155)
-                self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
+            # # Add a flow control to check available spot at the placing
+            # self._success = self.ur3e.go_to_goal_joint(
+            #     BOTTLE_PLACEMENT[bottle_type])
+            # rospy.sleep(1)
 
-                done = True
+            # # look for available spot to place the bottle
+
+            # self._success = self.ur3e.move_ee_along_axis(
+            #     axis='z', delta=-0.155)
+            # if self._success:
+            #     rospy.loginfo("Bottle placed successfully")
+            #     self.ur3e.open_gripper_to(width=580, force=200)
+            #     self.collisions.detach_object(
+            #         eef_link='tool0', obj_id=bot_id)
+            #     rospy.loginfo(f"object {bot_id} detached")
+            # rospy.sleep(1)
+
+            # self._success = self.ur3e.move_ee_along_axis(
+            #     axis='z', delta=-0.155)
+
+            self.ur3e.move_ee_along_axis(axis='z', delta=0.1)
+            self.ur3e.go_to_goal_joint(BOTTLE_PLACEMENT[bottle_type])
+
+            # check if any placement area is full
+            self._bottles[bottle_type]['count'] += 1
+            for bottle_type in self._bottles:
+                if self._bottles[bottle_type]['count'] == PLACEMENT_SLOT:
+                    rospy.loginfo(f'All {bottle_type} bottles are sorted!')
+                    self._set_state_srv(name='warning_data',
+                                        input=f'Please remove all {bottle_type} bottles from the placement area!')
+
+                    rospy.signal_shutdown(f'All {bottle_type} bottles are sorted!')
+
+            # ------------------------------------------------------------ #
+
+            # DONE
+            self._state = State.BACK_TO_HOME
+            self._set_state_srv('current_state', self._state.value)
+            self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
+
+                # done = True
 
             self.rate.sleep()
 
     def look_for_crate(self):
 
         self.rs.set_Crate_Flag(True)
-        rospy.sleep(1)
         crate_pose = self.rs.get_crate_pos()
         rospy.loginfo(f"Crate pose: {crate_pose}")
         self.rs.set_Crate_Flag(False)
 
+        # additional offset to have camera looking at the center of the crate
         pose = list_to_pose(
             [crate_pose[0] + TX,
              crate_pose[1] + 0.005 + TY,
@@ -261,10 +327,10 @@ class MissionPlanner:
     def look_for_bottle(self):
 
         self.rs.set_Bottle_Flag(True)
-        rospy.sleep(3)
         bottle_pose = self.rs.get_bottle_pos()
 
         while bottle_pose is None:   # Wait until the bottle is detected
+            self._set_state_srv('warning_data', 'Bottle not detected!')
             rospy.loginfo("Bottle not detected!")
             bottle_pose = self.rs.get_bottle_pos()
             if not self.rs.get_circle_flag():
@@ -292,19 +358,26 @@ class MissionPlanner:
         self.classifier.set_Classify_Flag(True, wait=True)
         target_js = deepcopy(self.ur3e.get_current_joint_values())
         target_js[-1] += 1.57
+
+        # setup timeout mechanism
+        start_time = rospy.Time.now()
         while self.classifier.get_brand() is None or self.classifier.get_brand() == "Unidefined":
             self.ur3e.go_to_goal_joint(target_js, wait=False)
             rospy.loginfo("Waiting for classification")
-            rospy.sleep(1)
+            if (rospy.Time.now() - start_time).to_sec() > 5:
+                self._set_state_srv('warning_data', 'Classification timeout!')
+                rospy.loginfo("Classification timeout")
+                break
+
         self.ur3e.stop()
         bottle_type = self.classifier.get_brand()
         self.classifier.set_Classify_Flag(False, wait=True)
-        self.call_service('type_of_bottle', bottle_type)
+        self._set_state_srv('type_of_bottle', bottle_type)
 
         return bottle_type
 
     @staticmethod
-    def call_service(name, input):
+    def _set_state_srv(name, input):
         rospy.wait_for_service(name)
         try:
             current_state = rospy.ServiceProxy(name, CurrentState)
@@ -313,10 +386,29 @@ class MissionPlanner:
         except rospy.ServiceException as e:
             rospy.logerr("Service call failed: %s" % e)
 
+    def _set_state(self, state : State) -> None:
+        self._state = state
+        self._set_state_srv('current_state', self._state.value)
+
+    def _system_helt_srv(self, data : bool) -> None:
+        rospy.wait_for_service('System_Halt')
+        try:
+            system_halt = rospy.ServiceProxy('System_Halt', SetBool)
+            resp = system_halt(SetBoolRequest(data=data))
+            rospy.loginfo("Service response: %s" % resp.message)
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s" % e)
+
+    def handle_system_halt(self, request : SetBoolRequest):
+        self._system_halt = request.data
+        rospy.loginfo(f"System halt set to: {self._system_halt}")
+        return SetBoolResponse(success=True, message=f"System halt set to: {self._system_halt}")
+
     def safety_check(self):
 
         while not rospy.is_shutdown():
             if not self._success:
+                self._set_state_srv('warning_data', 'Failed to pick the bottle')
                 rospy.loginfo("Failed to pick the bottle")
                 rospy.signal_shutdown("Failed to pick the bottle")
             rospy.sleep(1)

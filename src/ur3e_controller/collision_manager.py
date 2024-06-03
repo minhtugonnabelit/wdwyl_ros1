@@ -32,10 +32,10 @@ class CollisionManager:
 
         bound_pose = PoseStamped()
         bound_pose.pose = list_to_pose(
-            [0.0, -0.36, -0.07, 0.0, 0.0, 0.0])
+            [0.0, -0.36, -0.06, 0.0, 0.0, 0.0])
         bound_pose.header.frame_id = "base_link"
         bound_id = "bound"
-        self._scene.add_box(bound_id, bound_pose, size=(0.45, 0.35, 0.01))
+        self._scene.add_box(bound_id, bound_pose, size=(0.5, 0.35, 0.01))
 
         return bound_id
     
@@ -62,7 +62,7 @@ class CollisionManager:
         obj_pose.header.frame_id = frame_id
         obj_pose.pose = pose
 
-        mesh_path = f"package://ur3e_controller/meshes/{object_type}.stl"
+        mesh_path = f"package://src/ur3e_controller/meshes/{object_type}.stl"
         self._scene.add_mesh(obj_id, obj_pose, filename=mesh_path)
 
         return self.wait_for_obj_state(obj_name=obj_id, obj_is_known=True), obj_id
