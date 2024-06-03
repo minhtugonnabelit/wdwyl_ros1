@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ROS Data Viewer</title>
+    <style>
+        body {
+            font-family: Calibri, Arial, sans-serif; /* Set Calibri as the primary font */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            align-items: center; /* Center content horizontally */
+            justify-content: flex-start; /* Start positioning content from the top */
+            height: 100vh; /* Full viewport height */
+            background-color: #f4f4f9; /* A light background color */
+            position: relative;
+        }
+        #warning_data {
+            width: 100%; /* Take full width */
+            text-align: center; /* Center text horizontally */
+            font-size: 36px; /* Larger font size for visibility */
+            font-weight: bold; /* Bold font weight for emphasis */
+            color: red; /* Red color for warning */
+            padding: 30px 0; /* Padding for better spacing, only vertical padding */
+            background-color: #fff; /* White background for contrast */
+            position: fixed; /* Make it fixed at the top */
+            top: 0; /* Align to the top */
+            left: 0; /* Align to the left */
+            right: 0; /* Stretch to the right */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Subtle shadow for depth */
+        }
+        #data-container, #bottom-data-container {
+            width: 100%; /* Full width to use all horizontal space */
+            display: flex;
+            justify-content: space-around; /* Evenly space the data boxes */
+            padding-top: 255px; /* Add padding to avoid overlap with the fixed warning_data */
+            box-sizing: border-box; /* Include padding in width calculation */
+            flex-wrap: wrap; /* Allow wrapping for smaller screens */
+            margin-top: 90px; /* Margin to push down below the warning_data */
+        }
+
+        .data-box {
+            width: 360px; /* Adjust width for better control over box sizing */
+            padding: 22.5px;
+            margin: 15px 0; /* Vertical spacing */
+            font-size: 27px; /* Adjusted font size */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            border-radius: 7.5px;
+            text-align: center; /* Center text */
+        }
+        #logout-link {
+            position: absolute; /* Absolute positioning for the logout link */
+            right: 20px;
+            bottom: 20px;
+            padding: 10px;
+            background-color: #f00;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>    
+    <script>
+        function fetchData() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/data', true);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    document.getElementById('warning_data').innerText = data.warning_data;
+                    document.getElementById('state_data').innerText = data.state_data;
+                    document.getElementById('number_of_bottle').innerText = data.number_of_bottle;
+                    document.getElementById('type_of_bottle').innerText = data.type_of_bottle;
+                    document.getElementById('number_of_crown_bottle').innerText = data.number_of_crown_bottle;
+                    document.getElementById('number_of_heineken_bottle').innerText = data.number_of_heineken_bottle;
+                    document.getElementById('number_of_4_pines_bottle').innerText = data.number_of_4_pines_bottle;
+                    document.getElementById('number_of_great_northern_bottle').innerText = data.number_of_great_northern_bottle;
+                } else {
+                    console.error('Error fetching data');
+                }
+            };
+            xhr.send();
+        }
+        setInterval(fetchData, 500); // Fetch data every 1 second
+    </script>
+</head>
+<body>
+    <div id="warning_data">Loading Warning Data...</div>
+    <div id="data-container">
+        <div id="state_data" class="data-box">Waiting for state data...</div>
+        <div id="number_of_bottle" class="data-box">Waiting for number of bottle data...</div>
+        <div id="type_of_bottle" class="data-box">Waiting for type of bottle data...</div>
+    </div>
+    <div id="bottom-data-container">
+        <div id="number_of_crown_bottle" class="data-box">Waiting for number of crown bottle data...</div>
+        <div id="number_of_heineken_bottle" class="data-box">Waiting for number of heineken bottle data...</div>
+        <div id="number_of_4_pines_bottle" class="data-box">Waiting for number of 4 pines bottle data...</div>
+        <div id="number_of_great_northern_bottle" class="data-box">Waiting for number of great northern bottle data...</div>
+    </div>
+    <a id="logout-link" href="/logout">Logout</a>
+</body>
+</html>

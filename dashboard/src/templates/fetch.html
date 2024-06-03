@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ROS Data Viewer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
+        :root{
+            --white-color: #FAFAFA;
+            --grey-color: #686868;
+            --secondary-color: #292929;
+            --black-color: #131313;
+        }
+
+        .bw-mode{
+            --white-color: #131313;
+            --grey-color: #292929;
+            --secondary-color:  #FAFAFA;
+            --black-color:  #686868;
+        }
+
+        *, *::after, *::before{
+            box-sizing:  border-box;
+        }
+
+        body{
+            font-family: Rubik, Arial, Helvetica, sans-serif;
+            font-size: 2.4rem;
+            line-height: 1.5;
+            color: var(--black-color);
+        }
+
+        h1,h2,h3{
+            margin: 0;
+            line-height: 1.1;
+            color: var(--white-color);
+        }
+
+        h1{
+            font-size: 4rem;
+        }
+
+        h2{
+            font-size: 2rem;
+            color: var(--grey-color);
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+        }
+
+        p{
+            margin: 0;
+            font-size: 2rem;
+            color: var(--white-color);
+        }
+
+        @media screen and (min-width: 736px){
+            h1{
+                font-size: 5rem;
+            }
+            
+            h2{
+                font-size: 3rem;
+            }
+        }
+
+        @media screen and (min-width: 1024px){
+            h1{
+                font-size: 7rem;
+            }
+            
+            h2{
+                font-size: 4rem;
+            }
+        }
+
+        /*** Hero Section ***/
+        .hero{
+            background: var(--secondary-color);
+            height: 100vh;
+            overflow: hidden;
+            transition: all 1s;
+        }
+
+        .hero__container{
+            padding-top: 30rem;
+            padding-bottom: 10rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .hero__button{
+            width: 20rem;
+            height: 5rem;
+            border-radius: 50px;
+            background-color: var(--secondary-color);
+            color: var(--white-color);
+            border: 5px solid var(--white-color);
+            transition: all ease-in 0.75s;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .hero__button:hover{
+            background-color: var(--white-color);
+            color: var(--black-color);
+        }
+
+        .hero__image{
+            fill: var(--white-color);
+            padding-top: 20rem;
+            position: relative;
+            left: -40px;
+            width: 150rem;
+        }
+
+        @media screen and (min-width: 736px){
+            .hero__image{
+                fill: var(--white-color);
+                padding-top: 15rem;
+                position: relative;
+                left: -40px;
+                width: 175rem;
+            }
+        }
+
+        @media screen and (min-width: 1024px){
+            .hero__image{
+                fill: var(--white-color);
+                padding-top: 15rem;
+                position: relative;
+                left: -40px;
+                width: 200rem;
+            }
+        }
+
+        /*** Dark and White Button ***/
+        .container--text{
+            background-color: var(--black-color);
+        }
+
+        .lamp-container {
+            position: fixed;
+            right: 50px;
+            top: 10px;
+            z-index: 1000;  
+        }
+
+        .lamp{
+            position: relative;
+            margin: 0 auto;
+            width: 0.7rem;
+            height: 10rem;
+            background-image: 
+                linear-gradient(var(--white-color), var(--white-color)),
+                linear-gradient(var(--white-color), var(--white-color)),
+                linear-gradient(var(--white-color), var(--white-color));
+            background-repeat: no-repeat;
+            background-size: 
+                0.15rem 8rem,
+                0.4rem 0.8rem,
+                0.7rem 2rem;
+            background-position: 
+                50% 0,
+                0.14rem 8rem,
+                0 8.8rem;
+        }
+
+        .lamp:before,
+        .lamp:after{
+            content:"";
+            position: absolute;
+        }
+
+        .light,
+        .light:before{
+            position: relative;
+        }
+
+        .light{
+            width: 4.3rem;
+            height:  4.3rem;
+            top: 10rem;
+            left: -1.7rem;
+            border-radius: 10rem;
+            cursor: pointer;
+            background: var(--white-color);
+            box-shadow: inset 2px -2px 10px var(--black-color);
+            transition: all 1s;
+        }
+
+        /*** Fetch Page ***/
+        .ros-reviewer{
+            background-color: var(--black-color);
+        }
+
+        #warning_data {
+            width: 100%; 
+            text-align: center; 
+            font-size: 50px; 
+            font-weight: bold; 
+            color: var(--white-color); 
+            padding: 30px 0; 
+            background-color: var(--grey-color); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); 
+        }
+
+        .content-container{
+            display: flex;
+            flex-direction: column;
+            gap: 0rem;
+            margin: 0 auto;  
+            margin-bottom: 5rem;
+            margin-top: 10rem;
+            max-width: 2000px;
+            width: 100%;
+        }
+
+        .data-container, .bottom-data-container {
+            display: flex;
+            justify-content: space-around; 
+            flex-wrap: wrap;
+        }
+
+        .data-box {
+            width: 360px; 
+            padding: 22.5px;
+            margin: 15px 0; 
+            font-size: 27px; 
+            box-shadow: 0 6px 12px var(--grey-color);
+            background-color: #fff;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .button__container{
+            background-color: var(--secondary-color); 
+            text-align: center;
+            height: 4rem;
+            margin: 0 auto;
+        }
+
+        @media screen and (min-width: 736px){
+            .content-container{
+                margin-bottom: 10rem;
+                margin-top: 20rem;
+                gap: 3rem;
+            }
+        }
+
+        .button-container{
+            height: 10rem;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .button__fetch{
+            width: 20rem;
+            height: 20rem;
+            color: var(--white-color);
+            transition: all ease-in 0.75s;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all ease-in 0.5s;
+        }
+
+        .button__fetch:hover{
+            color: yellow;
+        }
+    </style>
+  </head>
+  <body class="ros-reviewer">
+    <div id="warning_data">Loading Warning Data...</div>
+    <div class="content-container">
+      <div class="data-container">
+        <div id="state_data" class="data-box">Waiting for state data...</div>
+        <div id="number_of_bottle" class="data-box">
+          Waiting for number of bottle data...
+        </div>
+        <div id="type_of_bottle" class="data-box">
+          Waiting for type of bottle data...
+        </div>
+      </div>
+      <div class="bottom-data-container">
+        <div id="number_of_crown_bottle" class="data-box">
+          Waiting for number of crown bottle data...
+        </div>
+        <div id="number_of_heineken_bottle" class="data-box">
+          Waiting for number of heineken bottle data...
+        </div>
+        <div id="number_of_4_pines_bottle" class="data-box">
+          Waiting for number of 4 pines bottle data...
+        </div>
+        <div id="number_of_great_northern_bottle" class="data-box">
+          Waiting for number of great northern bottle data...
+        </div>
+      </div>
+    </div>
+
+      <div class="button-container">
+        <a href="/logout" class="button__fetch">
+          Logout System
+        </a>
+      </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script src="script.js"></script>
+    <script>
+        AOS.init();
+        function fetchData() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/data', true);
+            xhr.onload = function () {
+                if (xhr.status === 200){
+                    var data = JSON.parse(xhr.responseText);
+                    document.getElementById('warning_data').innerText = data.warning_data;
+                    document.getElementById('state_data').innerText = data.state_data;
+                    document.getElementById('number_of_bottle').innerText = data.number_of_bottle;
+                    document.getElementById('type_of_bottle').innerText = data.type_of_bottle;
+                    document.getElementById('number_of_crown_bottle').innerText = data.number_of_crown_bottle;
+                    document.getElementById('number_of_heineken_bottle').innerText = data.number_of_heineken_bottle;
+                    document.getElementById('number_of_4_pines_bottle').innerText = data.number_of_4_pines_bottle;
+                    document.getElementById('number_of_great_northern_bottle').innerText = data.number_of_great_northern_bottle;
+                }   
+                else{
+                console.error('Error fetching data');
+                }
+            };
+            xhr.send();
+        }
+
+        setInterval(fetchData, 500);
+
+        document.getElementById('toggleColorMode').addEventListener('click', function() {
+            document.documentElement.classList.toggle('bw-mode');
+        }); 
+    </script>
+  </body>
+  </body>
+</html>
