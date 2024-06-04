@@ -2,10 +2,10 @@
   <?xml version="1.0"?>
   <launch>
 
-    <include file="$(find onrobot_rg_control)/launch/bringup_server.launch">
+    <!-- <include file="$(find onrobot_rg_control)/launch/bringup_server.launch">
         <arg name="gripper" value="rg2"/>
         <arg name="ip" value="192.168.1.1"/>
-    </include>
+    </include> -->
 
     <!-- Load and initialize Realsense driver -->
     <include file="$(find realsense2_camera)/launch/rs_aligned_depth.launch" />

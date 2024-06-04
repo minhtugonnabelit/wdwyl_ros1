@@ -130,12 +130,16 @@ class RealSense:
 
         
         return P_camera
+    
+    def reset_count(self):
+        self.num_of_bottle = 0
 
     def rgb_callback(self, data):
+        # self.num_of_bottle = 0
         # Convert the ROS Image message to a cv2 image
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
-        brightness_increment = 50
+        brightness_increment = 0
         self.rgb_image = cv2.add(self.rgb_image, (brightness_increment, brightness_increment, brightness_increment, 0))
 
         if (self.get_crate == True and self.get_bottle == False and self.get_aruco == False):
@@ -150,19 +154,21 @@ class RealSense:
 
             # # Run YOLO model on the frame
             results = self.model(self.rgb_image)[0]
-
+            count = 0
             for result in results.boxes.data.tolist():
+                # self.num_of_bottle = 0
                 x1, y1, x2, y2, score, class_id = result
                 if score > self.threshold:
-                    self.num_of_bottle += 1
+                    count += 1
             # print(self.num_of_bottle)
+            self.num_of_bottle = copy.deepcopy(count)
             center_x_bottle = 0
             center_y_bottle = 0
 
             nearest_x_bottle = 0
             nearest_y_bottle = 0
             # Annotate the image
-            self.num_of_bottle = 0
+            
             min_dis = 1000
             for result in results.boxes.data.tolist():
                 x1, y1, x2, y2, score, class_id = result
@@ -246,7 +252,7 @@ class RealSense:
             cv2.circle(self.rgb_image, (nearest_x_bottle, nearest_y_bottle), 5, (0, 255, 0), -1)
 
         elif (self.get_crate == False and self.get_bottle == False and self.get_aruco == True):
-            self.aruco_processing()
+            self.aruco_processing_tam()
             
         else:
             pass
@@ -521,20 +527,20 @@ class RealSense:
         else:
             print("can not DETECT")
  
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    # Initialize the ROS Node
-    rospy.init_node('realsense_yolo', anonymous=True, log_level=1)
+#     # Initialize the ROS Node
+#     rospy.init_node('realsense_yolo', anonymous=True, log_level=1)
     
-    # Create the RealSense object
-    rs = RealSense()
+#     # Create the RealSense object
+#     rs = RealSense()
  
-    rs.get_bottle = False
-    rs.get_crate = False
-    rs.get_aruco = True
+#     rs.get_bottle = False
+#     rs.get_crate = False
+#     rs.get_aruco = True
  
-    # Spin to keep the script for exiting
-    rospy.spin()
+#     # Spin to keep the script for exiting
+#     rospy.spin()
  
-    # Destroy all OpenCV windows
-    cv2.destroyAllWindows()
+#     # Destroy all OpenCV windows
+#     cv2.destroyAllWindows()

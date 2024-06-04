@@ -17,13 +17,13 @@ from ur3e_controller.collision_manager import CollisionManager
 from ur3e_controller.utility import *
 
 # Importing perception module
-# from perception.detection.localizer_model import RealSense
-# from perception.detection.utility import *
-# from perception.classification.classification_real_time import Classification
+from perception.detection.localizer_model import RealSense
+from perception.detection.utility import *
+from perception.classification.classification_real_time import Classification
 
-from ...src.perception.detection.utility import *
-from ...src.perception.detection.localizer_model import RealSense
-from ...src.perception.classification.classification_real_time import Classification
+# from ...src.perception.detection.utility import *
+# from ...src.perception.detection.localizer_model import RealSense
+# from ...src.perception.classification.classification_real_time import Classification
 
 from copy import deepcopy
 
@@ -39,10 +39,10 @@ CAM_OFFSET = list_to_pose([TX,
                            ENDPOINT_OFFSET,
                            0, 0, 0])
 BOTTLE_PLACEMENT = {
-    "heineken": np.deg2rad([28, -124, -55, -91, 90, 28]).tolist(),
-    'crown': np.deg2rad([19, -121, -59, -90, 90, 19]).tolist(),
-    'greatnorthern': np.deg2rad([8, -123, -56, -91, 90, 8]).tolist(),
-    'paleale': np.deg2rad([-2, -128, -47, -94, 90, -2]).tolist()
+    "heineken": np.deg2rad([32.82, -113.25, -71.64, -82.87, 98.81, 32.82]).tolist(),
+    'crown': np.deg2rad([23.36, -110.23, -75.95, -81.56, 90.18, 23.36]).tolist(),
+    'greatnorthern': np.deg2rad([12.85, -112.96, -71.11, -85.90, 90, 12.85]).tolist(),
+    'paleale': np.deg2rad([1.6, -117, -65.12, -87.85, 90, 1.6]).tolist()
 
 }
 
@@ -85,6 +85,7 @@ class MissionPlanner:
 
         # Setup the scene with ur3e controller and homing
         self.ur3e.go_to_target_pose_name(UR3e.DETECT_CONFIG)
+        self.ur3e.open_gripper_to(width=580, force=200)
 
         # TF2 listener and broadcaster to deal with the transformation
         self.tf_buffer = tf2_ros.Buffer()
@@ -93,7 +94,7 @@ class MissionPlanner:
 
         # Initialize the mission planner variables
         self._success = True
-        self._system_halt = False
+        self._system_halted = False
         self._bound_id = 'bound'
 
         # Initialize the mission planner state and data variables
@@ -110,6 +111,15 @@ class MissionPlanner:
         self._safety_thread = Thread(target=self.safety_check)
         self._safety_thread.start()
 
+        self._set_state_srv('current_state', self._state.value)
+        self._set_state_srv('warning_data', 'No warning!')
+        self._set_state_srv('number_of_bottle', '0')
+        self._set_state_srv('type_of_bottle', 'None')
+        self._set_state_srv('number_of_heineken_bottle', '0')
+        self._set_state_srv('number_of_crown_bottle', '0')
+        self._set_state_srv('number_of_great_northern_bottle', '0')
+        self._set_state_srv('number_of_4_pines_bottle', '0')
+
         rospy.on_shutdown(self.cleanup)
 
     def system_loop(self):
@@ -124,6 +134,7 @@ class MissionPlanner:
         bottle_pose = None
         aruco_pose = None
         one_placement_full = False
+        end_state = 'PLACE_BOTTLE'
 
         # start with detecting the crate
         self._set_state(State.DETECT_CRATE)
@@ -151,7 +162,7 @@ class MissionPlanner:
             if self._state == State.DETECT_CRATE:
                 
                 if self._system_halted:
-                    rospy.loginfo("System is halted")
+                    rospy.loginfo("System is halted")   
                     continue
                 
                 # check if the crate bound box is still in the scene
@@ -182,7 +193,7 @@ class MissionPlanner:
 
                 # check if there still bottle in the crate
                 self.rs.set_Bottle_Flag(True)
-                rospy.sleep(3)
+                rospy.sleep(5)
                 if self.rs.get_num_of_bottle() == 0:
                     rospy.loginfo("No more bottle in the crate")
                     self.rs.set_Bottle_Flag(False)
@@ -194,6 +205,8 @@ class MissionPlanner:
                     rospy.loginfo(f'{self.rs.get_num_of_bottle()} detected!')
                     self._set_state_srv('number_of_bottle',
                                     self.rs.get_num_of_bottle())
+                    
+                
 
                 # Look for bottle pose
                 bottle_pose = self.look_for_bottle()
@@ -213,8 +226,6 @@ class MissionPlanner:
                 #####
 
                 # Hang to evelated level of the bottle possition
-                self._state = State.PICK_BOTTLE
-                self._set_state_srv('curent_state', self._state.value)
                 self._success = self.ur3e.go_to_pose_goal(pose=bottle_pose,
                                                             child_frame_id="bottle_center",
                                                             parent_frame_id="tool0")
@@ -274,7 +285,7 @@ class MissionPlanner:
                     # change the state to place the bottle
                     self._set_state(State.PLACE_BOTTLE)
 
-            #####
+            ##### 
             #   ACTION TO SORT THE BOTTLE
             #####
 
@@ -286,7 +297,7 @@ class MissionPlanner:
             
                 # add thin layer for crate top collision object
                 self.bound_id = self.collisions.add_crate_bound()
-                self._success = self.ur3e.move_ee_along_axis(
+                self.ur3e.move_ee_along_axis(
                     axis='x', delta=0.2)
                 rospy.sleep(1)
 
@@ -383,12 +394,21 @@ class MissionPlanner:
 
                 # done = True
 
+            if self._state == end_state:
+                rospy.loginfo("Mission completed!")
+                self._set_state_srv('warning_data', 'Mission completed!')
+                rospy.signal_shutdown("Mission completed!")
+
             self.rate.sleep()
 
     def look_for_crate(self):
 
         self.rs.set_Crate_Flag(True)
         crate_pose = self.rs.get_crate_pos()
+        while crate_pose is None:
+            crate_pose = self.rs.get_crate_pos()
+            rospy.loginfo("Crate not detected!")
+
         rospy.loginfo(f"Crate pose: {crate_pose}")
         self.rs.set_Crate_Flag(False)
 
@@ -396,8 +416,8 @@ class MissionPlanner:
         pose = list_to_pose(
             [crate_pose[0] + TX,
              crate_pose[1] + 0.005 + TY,
-             crate_pose[2] - HANG_OFFSET - 0.3,
-             0, 0, np.deg2rad(crate_pose[-1])]
+             crate_pose[2] - HANG_OFFSET - 0.2,
+             0, 0, np.deg2rad(self.rs.get_yaw())]
         )
 
         return pose
@@ -406,13 +426,16 @@ class MissionPlanner:
 
         self.rs.set_Bottle_Flag(True)
         bottle_pose = self.rs.get_bottle_pos()
-
+        count = 0
         while bottle_pose is None:   # Wait until the bottle is detected
             self._set_state_srv('warning_data', 'Bottle not detected!')
             rospy.loginfo("Bottle not detected!")
             bottle_pose = self.rs.get_bottle_pos()
             if not self.rs.get_circle_flag():
+                count += 1
                 bottle_pose = None
+                if count > 20:
+                    bottle_pose = self.rs.get_bottle_pos()
 
         if bottle_pose[-1] is None:
             bottle_pose[-1] = 0.0
@@ -442,7 +465,7 @@ class MissionPlanner:
         while self.classifier.get_brand() is None or self.classifier.get_brand() == "Unidefined":
             self.ur3e.go_to_goal_joint(target_js, wait=False)
             rospy.loginfo("Waiting for classification")
-            if (rospy.Time.now() - start_time).to_sec() > 5:
+            if (rospy.Time.now() - start_time).to_sec() > 10:
                 self._set_state_srv('warning_data', 'Classification timeout!')
                 rospy.loginfo("Classification timeout")
                 return None
@@ -486,8 +509,8 @@ class MissionPlanner:
 
         while not rospy.is_shutdown():
             if not self._success:
-                self._set_state_srv('warning_data', 'Failed to pick the bottle')
-                rospy.loginfo("Failed to pick the bottle")
+                self._set_state_srv('warning_data', 'Failed to execute the mission!')
+                rospy.loginfo("Failed to execute the mission!")
                 rospy.signal_shutdown("Failed to pick the bottle")
             rospy.sleep(1)
 

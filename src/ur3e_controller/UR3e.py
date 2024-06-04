@@ -80,7 +80,7 @@ class UR3e:
 
         self._group.set_start_state_to_current_state()
         self._group.set_planner_id("RRTConnect")
-        self._group.set_planning_time(10)
+        self._group.set_planning_time(20)
         self._group.set_num_planning_attempts(5)
         self._group.set_goal_position_tolerance(POS_TOL)
         self._group.set_goal_joint_tolerance(POS_TOL)
@@ -106,7 +106,7 @@ class UR3e:
 
         # Add a thin box above the crate to restraint the robot motion not to go downward too much
         wall_pose = PoseStamped()
-        wall_pose.pose = list_to_pose([0.0, -0.61, -0.07, 0.0, 0.0, 0.0])
+        wall_pose.pose = list_to_pose([0.0, -0.71, -0.07, 0.0, 0.0, 0.0])
         wall_pose.header.frame_id = "base_link"
         bound_id = "wall"
         self._scene.add_box(bound_id, wall_pose, size=(2, 0.01, 2))
@@ -126,7 +126,7 @@ class UR3e:
         """
 
         bound_pose = PoseStamped()
-        bound_pose.pose = list_to_pose([0.0, -0.36, -0.07, 0.0, 0.0, 0.0])
+        bound_pose.pose = list_to_pose([0.0, -0.36, -0.17, 0.0, 0.0, 0.0])
         bound_pose.header.frame_id = "base_link"
         bound_id = "bound"
         self._scene.add_box(bound_id, bound_pose, size=(0.45, 0.35, 0.01))
@@ -149,8 +149,8 @@ class UR3e:
         joint_constraint_04 = JointConstraint()
         joint_constraint_04.joint_name = "shoulder_pan_joint"
         joint_constraint_04.position = 2.0944
-        joint_constraint_04.tolerance_above = 2.3944
-        joint_constraint_04.tolerance_below = 2.3944
+        joint_constraint_04.tolerance_above = 2.5
+        joint_constraint_04.tolerance_below = 2.5
         joint_constraint_04.weight = 1
         constraints.joint_constraints.append(joint_constraint_04)
 
@@ -186,16 +186,16 @@ class UR3e:
         joint_constraint_05.weight = 1
         constraints.joint_constraints.append(joint_constraint_05)
         
-        # set orientation constraint to be always pointing down
-        orientation_constraint = OrientationConstraint()
-        orientation_constraint.header.frame_id = "base_link"
-        orientation_constraint.link_name = self._eef_link
-        orientation_constraint.orientation = self._group.get_current_pose().pose.orientation
-        orientation_constraint.absolute_x_axis_tolerance = 0.1
-        orientation_constraint.absolute_y_axis_tolerance = 0.1
-        orientation_constraint.absolute_z_axis_tolerance = 0.1
-        orientation_constraint.weight = 1
-        constraints.orientation_constraints.append(orientation_constraint)
+        # # set orientation constraint to be always pointing down
+        # orientation_constraint = OrientationConstraint()
+        # orientation_constraint.header.frame_id = "base_link"
+        # orientation_constraint.link_name = self._eef_link
+        # orientation_constraint.orientation = self._group.get_current_pose().pose.orientation
+        # orientation_constraint.absolute_x_axis_tolerance = 0.1
+        # orientation_constraint.absolute_y_axis_tolerance = 0.1
+        # orientation_constraint.absolute_z_axis_tolerance = 0.1
+        # orientation_constraint.weight = 1
+        # constraints.orientation_constraints.append(orientation_constraint)
 
         self.constraints = constraints
         self._group.set_path_constraints(constraints)
@@ -285,18 +285,19 @@ class UR3e:
                 rospy.logerr("Failed to find a plan")
                 return None, 0.0
 
-            # check if the plan is valid with timestamp duplication
-        path = []
+        #     # check if the plan is valid with timestamp duplication
+        path = [plan.joint_trajectory.points[0]]
         for i in range(len(plan.joint_trajectory.points)):
             if i == 0:
                 continue
 
-            time_diff = plan.joint_trajectory.points[i].time_from_start.secs - \
-                plan.joint_trajectory.points[i-1].time_from_start.secs
-            print(time_diff)
-            if not plan.joint_trajectory.points[i].time_from_start.secs == plan.joint_trajectory.points[i].time_from_start.secs:
-                path.append(plan.joint_trajectory.points[i])
-                
+            if plan.joint_trajectory.points[i].time_from_start.to_sec() == plan.joint_trajectory.points[i-1].time_from_start.to_sec() == 0:
+                continue    
+
+            path.append(plan.joint_trajectory.points[i])
+
+        plan.joint_trajectory.points = path    
+        print(len(plan.joint_trajectory.points))   
         rospy.loginfo(
             f"Fraction planned: {fraction}; Fix itteration {fix_itterations}")
         return plan, fraction
