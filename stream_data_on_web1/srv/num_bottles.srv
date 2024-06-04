@@ -1,0 +1,4 @@
+string num_bottles
+---
+bool success
+string message

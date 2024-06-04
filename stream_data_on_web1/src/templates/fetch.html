@@ -1,0 +1,150 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ROS Data Viewer</title>
+    <script>
+        function fetchData() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/data', true);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    document.getElementById('data').innerText = data.ros_data;
+                } else {
+                    console.error('Error fetching data');
+                }
+            };
+            xhr.send();
+        }
+        setInterval(fetchData,100); // Fetch data every 1 second
+    </script>
+</head>
+<body>
+    <h1>ROS Topic Data</h1>
+    <p id="data">Loading...</p>
+</body>
+</html> -->
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ROS Data Viewer</title>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        function fetchData() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/data', true);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    // Update each section with the corresponding data
+                    document.getElementById('num-bottles').innerText = data.num_bottles;
+                    document.getElementById('classification').innerText = data.classification;
+                    document.getElementById('picked-bottle').innerText = data.picked_bottle;
+                    document.getElementById('accuracy').innerText = data.accuracy.toFixed(2) + '%';
+                    document.getElementById('bottle-left').innerText = data.bottle_left;
+                } else {
+                    console.error('Error fetching data');
+                }
+            };
+            xhr.send();
+        }
+        setInterval(fetchData, 1000); // Fetch data every 1 second
+    </script>
+</head>
+<body>
+    <h1>ROS Topic Data</h1>
+
+    <div id="num-bottles-section">
+        <h2>Number of Bottles</h2>
+        <p id="num-bottles">Loading...</p>
+    </div>
+
+    <div id="classification-section">
+        <h2>Bottle Classification</h2>
+        <p id="classification">Loading...</p>
+    </div>
+
+    <div id="picked-bottle-section">
+        <h2>Picked Bottle</h2>
+        <p id="picked-bottle">Loading...</p>
+    </div>
+
+    <div id="accuracy-section">
+        <h2>Picking Accuracy</h2>
+        <p id="accuracy">Loading...</p>
+    </div>
+    New Section for Bottles Left -->
+    <!-- <div id="bottles-left-section">
+        <h2>Bottles Left</h2>
+        <p id="bottle-left">Loading...</p>
+    </div>
+
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ROS Data Viewer</title>
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+    <script>
+        function fetchData() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/data', true);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    // Update each section with the corresponding data
+                    document.getElementById('num-bottles').innerText = data.num_bottles;
+                    document.getElementById('classification').innerText = data.classification;
+                    document.getElementById('picked-bottle').innerText = data.picked_bottle;
+                    document.getElementById('accuracy').innerText = data.accuracy.toFixed(2) + '%';
+                    document.getElementById('bottle-left').innerText = data.bottle_left;
+                } else {
+                    console.error('Error fetching data');
+                }
+            };
+            xhr.send();
+        }
+        setInterval(fetchData, 1000); // Fetch data every 1 second
+    </script>
+    
+</head>
+<body>
+    <div class="container">
+        <h1>Bottle Sorting</h1>
+
+        <div id="bottles-left-section" class="section">
+            <h2>Bottles Left</h2>
+            <p id="bottle-left">Loading...</p>
+        </div>
+
+        <div id="accuracy-section" class="section">
+            <h2>Picking Accuracy</h2>
+            <p id="accuracy">Loading...</p>
+        </div>
+
+        <div id="picked-bottle-section" class="section">
+            <h2>Picked Bottle</h2>
+            <p id="picked-bottle">Loading...</p>
+        </div>
+
+        <div id="num-bottles-section" class="section">
+            <h2>Number of Bottles</h2>
+            <p id="num-bottles">Loading...</p>
+        </div>
+
+        <div id="classification-section" class="section">
+            <h2>Bottle Classification</h2>
+            <p id="classification">Loading...</p>
+        </div>
+    </div>
+</body>
+</html>
+
+
