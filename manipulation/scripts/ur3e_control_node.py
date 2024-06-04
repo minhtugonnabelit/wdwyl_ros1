@@ -296,15 +296,15 @@ class MissionPlanner:
                     continue
             
                 # add thin layer for crate top collision object
-                self.bound_id = self.collisions.add_crate_bound()
-                self.ur3e.move_ee_along_axis(
-                    axis='x', delta=0.2)
+                # self.bound_id = self.collisions.add_crate_bound()
+                # self.ur3e.move_ee_along_axis(
+                #     axis='x', delta=0.2)
                 rospy.sleep(1)
 
                 # ------------------------------------------------------------ #
 
                 # First drag the bottle didicated row of placement for type of bottle
-                self._success = self.ur3e.go_to_goal_joint(
+                self._success = self.ur3e.go_to_goal_joint(     
                     BOTTLE_PLACEMENT[bottle_type])
 
                 # Look for the the placement area as the middle of the picture frame

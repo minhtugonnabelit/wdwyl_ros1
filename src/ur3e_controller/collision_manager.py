@@ -35,7 +35,7 @@ class CollisionManager:
             [0.0, -0.36, -0.17, 0.0, 0.0, 0.0])
         bound_pose.header.frame_id = "base_link"
         bound_id = "bound"
-        self._scene.add_box(bound_id, bound_pose, size=(0.5, 0.35, 0.01))   
+        self._scene.add_box(bound_id, bound_pose, size=(0.45, 0.35, 0.01))   
 
         return bound_id
     
