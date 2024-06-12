@@ -1,4 +1,0 @@
-int32 bottle_left
----
-bool success
-string message

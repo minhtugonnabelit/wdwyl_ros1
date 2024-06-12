@@ -1,5 +1,5 @@
 build/
-__pycache__
+__pycache__x
 .vscode/
 src/perception/brand_classification/data
 videos/

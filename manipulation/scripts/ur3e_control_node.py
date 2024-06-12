@@ -6,12 +6,10 @@ from enum import Enum
 
 import rospy
 import tf2_ros
-from wdwyl_ros1.srv import CurrentState, CurrentStateRequest
+from dashboard.srv import CurrentState, CurrentStateRequest
 from std_srvs.srv import SetBool, SetBoolResponse, SetBoolRequest
 
 # Importing planner module
-from geometry_msgs.msg import Pose
-from visualization_msgs.msg import Marker
 from ur3e_controller.UR3e import UR3e
 from ur3e_controller.collision_manager import CollisionManager
 from ur3e_controller.utility import *
@@ -296,9 +294,9 @@ class MissionPlanner:
                     continue
             
                 # add thin layer for crate top collision object
-                # self.bound_id = self.collisions.add_crate_bound()
-                # self.ur3e.move_ee_along_axis(
-                #     axis='x', delta=0.2)
+                self.bound_id = self.collisions.add_crate_bound()
+                self.ur3e.move_ee_along_axis(
+                    axis='x', delta=0.2)
                 rospy.sleep(1)
 
                 # ------------------------------------------------------------ #
