@@ -62,9 +62,6 @@ class UR3e:
         self._display_trajectory_publisher = rospy.Publisher(
             "/move_group/display_planned_path", DisplayTrajectory, queue_size=20)
 
-        # self._joint_states_sub = rospy.Subscriber(
-        #     "/joint_states", JointState, self._joint_states_callback)
-
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
@@ -173,8 +170,8 @@ class UR3e:
         joint_constraint_03 = JointConstraint()
         joint_constraint_03.joint_name = "wrist_2_joint"
         joint_constraint_03.position = pi/2
-        joint_constraint_03.tolerance_above = 0.5
-        joint_constraint_03.tolerance_below = 0.5
+        joint_constraint_03.tolerance_above = 0.7
+        joint_constraint_03.tolerance_below = 0.7
         joint_constraint_03.weight = 1
         constraints.joint_constraints.append(joint_constraint_03)
 
@@ -185,17 +182,6 @@ class UR3e:
         joint_constraint_05.tolerance_below = 3.14
         joint_constraint_05.weight = 1
         constraints.joint_constraints.append(joint_constraint_05)
-        
-        # # set orientation constraint to be always pointing down
-        # orientation_constraint = OrientationConstraint()
-        # orientation_constraint.header.frame_id = "base_link"
-        # orientation_constraint.link_name = self._eef_link
-        # orientation_constraint.orientation = self._group.get_current_pose().pose.orientation
-        # orientation_constraint.absolute_x_axis_tolerance = 0.1
-        # orientation_constraint.absolute_y_axis_tolerance = 0.1
-        # orientation_constraint.absolute_z_axis_tolerance = 0.1
-        # orientation_constraint.weight = 1
-        # constraints.orientation_constraints.append(orientation_constraint)
 
         self.constraints = constraints
         self._group.set_path_constraints(constraints)
@@ -251,34 +237,39 @@ class UR3e:
 
         self.visualize_target_pose(pose)
 
-        self._group.set_pose_target(pose)
-        self._group.go(wait=True)
-        self._group.stop()
-        self._group.clear_pose_targets()
+        path, frac = self.gen_carternian_path(pose)
+        self.display_traj(path)
+        self.execute_plan(path)
+
+        # self._group.set_pose_target(pose)
+        # self._group.go(wait=True)
+        # self._group.stop()
+        # self._group.clear_pose_targets()
 
         cur_pose = self._group.get_current_pose().pose
         return all_close(pose, cur_pose, 0.001)
 
-    def gen_carternian_path(self, target_pose: Pose, max_step=0.001, jump_thresh=0.0):
+    def gen_carternian_path(self, target_pose: Pose, step_resolution=0.001, jump_thresh=0.0):
         r"""
         Generate a cartesian path as a straight line to a desired pose .
         @returns: RobotTrajectory instance for the cartesian path
         """
-        current_pose = self._group.get_current_pose().pose
         plan = None
         fraction = 0.0
         fix_itterations = 0
+        current_pose = self._group.get_current_pose().pose
 
         # generate a straight line path using a scaling 0 to 1 applied to the target pose differ to current pose
-        waypoints = []
-        waypoints.append(current_pose)
-        waypoints.append(target_pose)
+        waypoints = [current_pose, target_pose]
+        distance = np.linalg.norm(
+            pose_to_SE3(target_pose).t - pose_to_SE3(current_pose).t)
+        ee_step = 0.0001 if distance > 0.01 else step_resolution
 
         # Blocking loop to ensure the cartesian path is fully planned
-        while fraction < 1.0:
+        while fraction < 0.8:
 
             (plan, fraction) = self._group.compute_cartesian_path(
-                waypoints, max_step, jump_thresh, avoid_collisions=True, path_constraints=self.constraints)
+                waypoints, ee_step, jump_thresh, avoid_collisions=True, path_constraints=self.constraints)
 
             fix_itterations += 1
             if fix_itterations > 50:  # Maxium fix itterations
@@ -287,11 +278,12 @@ class UR3e:
 
         #     # check if the plan is valid with timestamp duplication
         path = [plan.joint_trajectory.points[0]]
-        for i in range(len(plan.joint_trajectory.points)):
-            if i == 0:
-                continue
+        for i in range(1, len(plan.joint_trajectory.points)):
 
-            if plan.joint_trajectory.points[i].time_from_start.to_sec() == plan.joint_trajectory.points[i-1].time_from_start.to_sec() == 0:
+            cur_point_stamp = plan.joint_trajectory.points[i].time_from_start.to_sec()
+            prev_point_stamp = plan.joint_trajectory.points[i-1].time_from_start.to_sec()
+
+            if cur_point_stamp == prev_point_stamp == 0:
                 continue    
 
             path.append(plan.joint_trajectory.points[i])
@@ -315,8 +307,7 @@ class UR3e:
             rospy.logerr(e)
             return False
         
-        # self._group.execute(plan, wait=True)
-        return all_close(plan.joint_trajectory.points[-1], self._group.get_current_pose().pose, 0.01)
+        return all_close(plan.joint_trajectory.points[-1], self._group.get_current_pose().pose, 0.001)
 
     def stop(self):
 
@@ -358,15 +349,6 @@ class UR3e:
         
         done = self.execute_plan(plan=plan)
         return done
-    
-    def rotate_ee(self, angle: float) -> bool:
-        r"""
-        Rotate the end effector around the z-axis of the planning frame."""
-        goal = deepcopy(self._group.get_current_joint_values())
-        goal[-1] += angle
-        done = self.go_to_goal_joint(goal, wait=False)
-        return done
-        
 
     # Gripper control
 
@@ -445,10 +427,3 @@ class UR3e:
         target_marker = create_marker(frame_id, type, pose)
         self._marker_pub.publish(target_marker)
 
-    # # Callbacks
-    # def _joint_states_callback(self, data: JointState):
-    #     r"""
-    #     Callback function for the joint states subscriber.
-    #     This data feeds directly to the virtual UR3 model as kinematic solver."""
-
-    #     self.virtual_UR.q = data.position

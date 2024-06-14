@@ -87,9 +87,15 @@ cd ../
 catkin build
 ```
 
-Run this line to start necessary driver for robot, gripper and camera on the master machine. 
+Run this line to start necessary driver for robot, gripper and camera on the master machine, each line run on a terminal for debug purpose. 
 ```shell
-roslaunch wdwyl_ros1 ur3e_rg2_bringup.launch robot_ip:=<your_robot_ip> gripper:=<you_gripper_type> ip:=<your_gripper_ip> 
+roslaunch wdwyl_ros1 ur3e_rg2_bringup.launch 
+
+roslaunch wdwyl_ros1 sensor_drivers.launch
+
+roslaunch onrobot_rg_control bringup_server.launch gripper:=rg2 ip:=192.168.1.1
+
+roslaunch ur3e_rg2_moveit_config moveit_rviz.launch 
 ```
 
 To start the automated sorting example, run the line below

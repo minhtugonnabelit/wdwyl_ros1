@@ -44,9 +44,39 @@ class Classification:
 
             probs = result[0].probs
             
-            if probs.top1 > 0.5:
+            if probs.top1conf.item() > 0.5:
                 name = deepcopy(names_dict[probs.top1])
-            elif probs.top1 < 0.5:
+            elif probs.top1conf.item() < 0.5:
+                name = "Unidefined"
+
+            self.brand = deepcopy(name)
+
+            text_position = (10, self.rgb_image.shape[0] - 10)
+
+            cv2.putText(self.rgb_image, name.upper(), text_position,
+                                cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
+            
+            # Display the image
+            cv2.imshow('Result', self.rgb_image)
+            cv2.waitKey(1)
+            
+        else:
+            pass
+
+    def rgb_callback(self, data):
+        # Convert the ROS Image message to a cv2 image
+        self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+
+        if self.classification_flag:
+            result = self.model(self.rgb_image)
+
+            names_dict = result[0].names
+
+            probs = result[0].probs
+            
+            if probs.top1conf.item() > 0.5:
+                name = deepcopy(names_dict[probs.top1])
+            elif probs.top1conf.item() < 0.5:
                 name = "Unidefined"
 
             self.brand = deepcopy(name)
