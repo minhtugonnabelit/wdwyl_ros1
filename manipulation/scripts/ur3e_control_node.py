@@ -6,12 +6,10 @@ from enum import Enum
 
 import rospy
 import tf2_ros
-from wdwyl_ros1.srv import CurrentState, CurrentStateRequest
+from dashboard.srv import CurrentState, CurrentStateRequest
 from std_srvs.srv import SetBool, SetBoolResponse, SetBoolRequest
 
 # Importing planner module
-from geometry_msgs.msg import Pose
-from visualization_msgs.msg import Marker
 from ur3e_controller.UR3e import UR3e
 from ur3e_controller.collision_manager import CollisionManager
 from ur3e_controller.utility import *
@@ -276,7 +274,7 @@ class MissionPlanner:
                     axis='x', delta=0.2)
                 
                 # First drag the bottle didicated row of placement for type of bottle
-                self._success = self.ur3e.go_to_goal_joint(
+                self._success = self.ur3e.go_to_goal_joint(     
                     BOTTLE_PLACEMENT[bottle_type])
 
                 # ------------------------------------------------------------ #

@@ -101,19 +101,19 @@ class UR3e:
         self._scene.attach_mesh("tool0", "camera_mount", touch_links=[
             "onrobot_rg2_base_link"])
 
-        # Add a thin box above the crate to restraint the robot motion not to go downward too much
-        wall_pose = PoseStamped()
-        wall_pose.pose = list_to_pose([0.0, -0.71, -0.07, 0.0, 0.0, 0.0])
-        wall_pose.header.frame_id = "base_link"
-        bound_id = "wall"
-        self._scene.add_box(bound_id, wall_pose, size=(2, 0.01, 2))
+        # # Add a thin box above the crate to restraint the robot motion not to go downward too much
+        # wall_pose = PoseStamped()
+        # wall_pose.pose = list_to_pose([0.0, -0.71, -0.07, 0.0, 0.0, 0.0])
+        # wall_pose.header.frame_id = "base_link"
+        # bound_id = "wall"
+        # self._scene.add_box(bound_id, wall_pose, size=(2, 0.01, 2))
 
-        # Add a ceiling to avoid robot with bottle to go overhead
-        ceilling_pose = PoseStamped()
-        ceilling_pose.pose = list_to_pose([0.0, 0.0, 0.7, 0.0, 0.0, 0.0])
-        ceilling_pose.header.frame_id = "base_link"
-        ceilling_id = "ceilling"
-        self._scene.add_box(ceilling_id, ceilling_pose, size=(2, 2, 0.01))
+        # # Add a ceiling to avoid robot with bottle to go overhead
+        # ceilling_pose = PoseStamped()
+        # ceilling_pose.pose = list_to_pose([0.0, 0.0, 0.7, 0.0, 0.0, 0.0])
+        # ceilling_pose.header.frame_id = "base_link"
+        # ceilling_id = "ceilling"
+        # self._scene.add_box(ceilling_id, ceilling_pose, size=(2, 2, 0.01))
 
         return True
     

@@ -11,6 +11,10 @@
         "./manipulation/src",
         "./src",
         "./src",
-        "./src"
-    ]
+        "./src",
+        "./perception/src",
+        "./perception/src",
+        "./perception/src"
+    ],
+    "cmake.sourceDirectory": "/home/benjamin/git/wdwyl_ros1/wdwyl_ros1"
 }
